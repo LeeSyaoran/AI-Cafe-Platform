@@ -1,4 +1,4 @@
-package main
+package config
 
 import "os"
 
@@ -16,6 +16,10 @@ type JWTConfig struct {
 	AccessTokenExpiration  int64 // seconds
 	RefreshTokenExpiration int64 // seconds
 	Issuer               string
+}
+
+func (c *JWTConfig) GetSigningKey() []byte {
+	return []byte(c.Secret)
 }
 
 type RateLimitConfig struct {

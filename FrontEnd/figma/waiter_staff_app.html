@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Café - Waiter App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5A6BFF;
+      --bg: #0B0F19;
+      --bg-card: #1E293B;
+      --border: #334155;
+      --text: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --error: #EF4444;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .app-header {
+      background: var(--bg-card);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .store-badge {
+      padding: 6px 12px;
+      background: rgba(90, 107, 255, 0.2);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      background: var(--bg-card);
+    }
+
+    .tab {
+      padding: 10px 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { border-color: var(--primary); }
+    .tab.active { background: var(--primary); border-color: var(--primary); }
+
+    /* Floor Map */
+    .floor-section {
+      padding: 16px;
+    }
+
+    .floor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .floor-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .floor-legend {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.empty { background: var(--success); }
+    .legend-dot.occupied { background: var(--warning); }
+    .legend-dot.ordered { background: var(--primary); }
+
+    .floor-map {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      aspect-ratio: 4/3;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .table {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .table:hover { transform: scale(1.05); }
+    .table.empty { border-color: var(--success); }
+    .table.occupied { border-color: var(--warning); }
+    .table.ordered { border-color: var(--primary); background: rgba(90, 107, 255, 0.1); }
+
+    .table-num {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .table-status {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .table-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .table-badge.warning { background: var(--warning); }
+    .table-badge.primary { background: var(--primary); }
+
+    /* Quick Actions */
+    .quick-actions {
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .quick-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+    .quick-btn-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .quick-btn.new .quick-btn-icon { background: rgba(16, 185, 129, 0.2); }
+    .quick-btn.qr .quick-btn-icon { background: rgba(6, 182, 212, 0.2); }
+    .quick-btn.takeaway .quick-btn-icon { background: rgba(245, 158, 11, 0.2); }
+
+    .quick-btn-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Orders Section */
+    .orders-section {
+      padding: 0 16px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .section-link {
+      font-size: 12px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* Order Card */
+    .order-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .order-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .order-table {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(90, 107, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .order-table-text h4 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .order-table-text span {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .order-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .order-items-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .order-item-qty {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .order-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .order-total {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .order-total span {
+      color: var(--success);
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .order-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .order-btn.confirm {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .order-btn.print {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 8px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active { color: var(--primary); }
+
+    .nav-icon {
+      font-size: 22px;
+    }
+
+    /* New Order Sheet */
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-card);
+      border-radius: 24px 24px 0 0;
+      z-index: 200;
+      transition: transform 0.3s ease;
+    }
+
+    .bottom-sheet.active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 12px auto;
+    }
+
+    .sheet-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .sheet-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .sheet-body {
+      padding: 20px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .table-select {
+      margin-bottom: 20px;
+    }
+
+    .table-select label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .table-option {
+      padding: 12px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .table-option:hover { border-color: var(--primary); }
+    .table-option.selected { border-color: var(--primary); background: rgba(90, 107, 255, 0.1); }
+
+    .menu-items {
+      margin-bottom: 20px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .menu-item:hover { border-color: var(--primary); }
+    .menu-item.selected { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+
+    .menu-item-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .menu-item.espresso .menu-item-icon { background: rgba(100, 116, 139, 0.2); }
+    .menu-item.latte .menu-item-icon { background: rgba(90, 107, 255, 0.2); }
+    .menu-item.signature .menu-item-icon { background: rgba(245, 158, 11, 0.2); }
+    .menu-item.premium .menu-item-icon { background: rgba(236, 72, 153, 0.2); }
+
+    .menu-item-info { flex: 1; }
+
+    .menu-item-info h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .menu-item-info p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .menu-item-price {
+      text-align: right;
+    }
+
+    .menu-item-price .price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .menu-item-price .credits {
+      font-size: 10px;
+      color: var(--success);
+    }
+
+    .item-qty {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .qty-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .qty-num {
+      font-size: 14px;
+      font-weight: 700;
+      width: 20px;
+      text-align: center;
+    }
+
+    .order-summary {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .summary-row.total {
+      font-weight: 700;
+      font-size: 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .summary-row.total span { color: var(--success); }
+
+    .submit-order {
+      width: 100%;
+      padding: 16px;
+      background: var(--success);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Backdrop */
+    .backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 150;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .backdrop.active {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="store-badge">🏪 Quán mẫu</span>
+      <h1 class="header-title">Phục vụ</h1>
+    </div>
+    <div class="header-right">
+      <div class="icon-btn">🔔</div>
+      <div class="icon-btn">👤</div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active">📋 Tất cả</div>
+    <div class="tab">⏳ Chờ xác nhận</div>
+    <div class="tab">👨‍🍳 Đang làm</div>
+    <div class="tab">✅ Sẵn sàng</div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <div class="quick-btn new" onclick="openNewOrder()">
+      <div class="quick-btn-icon">📝</div>
+      <span class="quick-btn-label">Tạo đơn</span>
+    </div>
+    <div class="quick-btn qr">
+      <div class="quick-btn-icon">📷</div>
+      <span class="quick-btn-label">Quét QR</span>
+    </div>
+    <div class="quick-btn takeaway">
+      <div class="quick-btn-icon">🥡</div>
+      <span class="quick-btn-label">Mang đi</span>
+    </div>
+  </div>
+
+  <!-- Floor Map -->
+  <section class="floor-section">
+    <div class="floor-header">
+      <h3 class="floor-title">🗺️ Sơ đồ quán</h3>
+      <div class="floor-legend">
+        <span class="legend-item"><span class="legend-dot empty"></span> Trống</span>
+        <span class="legend-item"><span class="legend-dot occupied"></span> Có khách</span>
+        <span class="legend-item"><span class="legend-dot ordered"></span> Đã đặt</span>
+      </div>
+    </div>
+
+    <div class="floor-map">
+      <div class="table empty"><span class="table-num">01</span><span class="table-status">Trống</span></div>
+      <div class="table occupied"><span class="table-num">02</span><span class="table-status">2 khách</span></div>
+      <div class="table ordered"><span class="table-num">03</span><span class="table-status">Đã đặt</span><span class="table-badge primary">!</span></div>
+      <div class="table empty"><span class="table-num">04</span><span class="table-status">Trống</span></div>
+      <div class="table occupied"><span class="table-num">05</span><span class="table-status">4 khách</span><span class="table-badge warning">!</span></div>
+      <div class="table ordered"><span class="table-num">06</span><span class="table-status">Đã đặt</span></div>
+      <div class="table empty"><span class="table-num">07</span><span class="table-status">Trống</span></div>
+      <div class="table empty"><span class="table-num">08</span><span class="table-status">Trống</span></div>
+      <div class="table occupied"><span class="table-num">09</span><span class="table-status">3 khách</span></div>
+      <div class="table empty"><span class="table-num">10</span><span class="table-status">Trống</span></div>
+      <div class="table empty"><span class="table-num">11</span><span class="table-status">Trống</span></div>
+      <div class="table occupied"><span class="table-num">12</span><span class="table-status">1 khách</span></div>
+    </div>
+  </section>
+
+  <!-- Orders List -->
+  <section class="orders-section">
+    <div class="section-header">
+      <h3 class="section-title">📋 Đơn hàng gần đây</h3>
+      <a href="#" class="section-link">Xem lịch sử →</a>
+    </div>
+
+    <!-- Order 1 -->
+    <div class="order-card">
+      <div class="order-card-header">
+        <div class="order-table">
+          <div class="table-icon">🪑</div>
+          <div class="order-table-text">
+            <h4>Bàn 05</h4>
+            <span>4 khách</span>
+          </div>
+        </div>
+        <div class="order-time">🕐 5 phút trước</div>
+      </div>
+
+      <div class="order-items-list">
+        <span class="order-item">🥛 Latte <span class="order-item-qty">x1</span></span>
+        <span class="order-item">⭐ Signature <span class="order-item-qty">x2</span></span>
+        <span class="order-item">☕ Espresso <span class="order-item-qty">x1</span></span>
+      </div>
+
+      <div class="order-card-footer">
+        <div class="order-total">Tổng: <span>240,000đ</span></div>
+        <div class="order-actions">
+          <button class="order-btn print">🖨️ In</button>
+          <button class="order-btn confirm">✓ Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order 2 -->
+    <div class="order-card">
+      <div class="order-card-header">
+        <div class="order-table">
+          <div class="table-icon">🪑</div>
+          <div class="order-table-text">
+            <h4>Bàn 03</h4>
+            <span>Đặt trước</span>
+          </div>
+        </div>
+        <div class="order-time">🕐 12 phút trước</div>
+      </div>
+
+      <div class="order-items-list">
+        <span class="order-item">👑 Premium <span class="order-item-qty">x1</span></span>
+      </div>
+
+      <div class="order-card-footer">
+        <div class="order-total">Tổng: <span>120,000đ</span></div>
+        <div class="order-actions">
+          <button class="order-btn print">🖨️ In</button>
+          <button class="order-btn confirm">✓ Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order 3 -->
+    <div class="order-card">
+      <div class="order-card-header">
+        <div class="order-table">
+          <div class="table-icon">🥡</div>
+          <div class="order-table-text">
+            <h4>Mang đi</h4>
+            <span>Khách: Minh Anh</span>
+          </div>
+        </div>
+        <div class="order-time">🕐 20 phút trước</div>
+      </div>
+
+      <div class="order-items-list">
+        <span class="order-item">☕ Espresso <span class="order-item-qty">x2</span></span>
+        <span class="order-item">🥛 Latte <span class="order-item-qty">x1</span></span>
+      </div>
+
+      <div class="order-card-footer">
+        <div class="order-total">Tổng: <span>110,000đ</span></div>
+        <div class="order-actions">
+          <button class="order-btn confirm">✅ Hoàn thành</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 100px;"></div>
+  </section>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <div class="nav-item active">
+      <span class="nav-icon">📋</span>
+      <span>Đơn hàng</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">🗺️</span>
+      <span>Sơ đồ</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">📊</span>
+      <span>Thống kê</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">💬</span>
+      <span>Chat</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">👤</span>
+      <span>Tôi</span>
+    </div>
+  </nav>
+
+  <!-- Backdrop -->
+  <div class="backdrop" id="backdrop" onclick="closeNewOrder()"></div>
+
+  <!-- New Order Sheet -->
+  <div class="bottom-sheet" id="newOrderSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">📝 Tạo đơn hàng mới</h3>
+      <button class="sheet-close" onclick="closeNewOrder()">×</button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="table-select">
+        <label>Chọn bàn</label>
+        <div class="table-grid">
+          <div class="table-option" onclick="selectTable(this, 1)">01</div>
+          <div class="table-option" onclick="selectTable(this, 2)">02</div>
+          <div class="table-option" onclick="selectTable(this, 3)">03</div>
+          <div class="table-option selected" onclick="selectTable(this, 4)">04</div>
+          <div class="table-option" onclick="selectTable(this, 5)">05</div>
+          <div class="table-option" onclick="selectTable(this, 6)">06</div>
+          <div class="table-option" onclick="selectTable(this, 7)">07</div>
+          <div class="table-option" onclick="selectTable(this, 8)">08</div>
+          <div class="table-option" onclick="selectTable(this, 9)">09</div>
+          <div class="table-option" onclick="selectTable(this, 10)">10</div>
+        </div>
+      </div>
+
+      <div class="menu-items">
+        <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 12px;">Chọn sản phẩm</label>
+
+        <div class="menu-item espresso" onclick="toggleItem(this)">
+          <div class="menu-item-icon">☕</div>
+          <div class="menu-item-info">
+            <h4>Espresso</h4>
+            <p>Cà phê + 2,000 Credits</p>
+            <div class="item-qty">
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, -1)">−</button>
+              <span class="qty-num">0</span>
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, 1)">+</button>
+            </div>
+          </div>
+          <div class="menu-item-price">
+            <div class="price">30K</div>
+            <div class="credits">+2K credits</div>
+          </div>
+        </div>
+
+        <div class="menu-item latte selected" onclick="toggleItem(this)">
+          <div class="menu-item-icon">🥛</div>
+          <div class="menu-item-info">
+            <h4>Latte</h4>
+            <p>Latte + 5,000 Credits</p>
+            <div class="item-qty">
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, -1)">−</button>
+              <span class="qty-num">1</span>
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, 1)">+</button>
+            </div>
+          </div>
+          <div class="menu-item-price">
+            <div class="price">50K</div>
+            <div class="credits">+5K credits</div>
+          </div>
+        </div>
+
+        <div class="menu-item signature" onclick="toggleItem(this)">
+          <div class="menu-item-icon">⭐</div>
+          <div class="menu-item-info">
+            <h4>Signature</h4>
+            <p>Signature + 10,000 Credits</p>
+            <div class="item-qty">
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, -1)">−</button>
+              <span class="qty-num">0</span>
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, 1)">+</button>
+            </div>
+          </div>
+          <div class="menu-item-price">
+            <div class="price">80K</div>
+            <div class="credits">+10K credits</div>
+          </div>
+        </div>
+
+        <div class="menu-item premium" onclick="toggleItem(this)">
+          <div class="menu-item-icon">👑</div>
+          <div class="menu-item-info">
+            <h4>Premium</h4>
+            <p>Premium + 18,000 Credits</p>
+            <div class="item-qty">
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, -1)">−</button>
+              <span class="qty-num">0</span>
+              <button class="qty-btn" onclick="event.stopPropagation(); changeItemQty(this, 1)">+</button>
+            </div>
+          </div>
+          <div class="menu-item-price">
+            <div class="price">120K</div>
+            <div class="credits">+18K credits</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-summary">
+        <div class="summary-row">
+          <span>🥛 Latte x1</span>
+          <span>50,000đ</span>
+        </div>
+        <div class="summary-row total">
+          <span>Tổng cộng</span>
+          <span>50,000đ</span>
+        </div>
+      </div>
+
+      <button class="submit-order" onclick="submitOrder()">🛒 Tạo đơn hàng</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================== DATA ====================
+    let orders = [
+      { id: 2847, status: 'waiting', table: 4, items: [{name: 'Latte', qty: 1, price: 50000}], time: '2 phút', customer: 'Thu Hà' },
+      { id: 2846, status: 'cooking', table: 7, items: [{name: 'Signature', qty: 2, price: 160000}, {name: 'Premium', qty: 1, price: 120000}], time: '8 phút', customer: 'Online' },
+      { id: 2845, status: 'ready', table: 2, items: [{name: 'Espresso', qty: 1, price: 30000}], time: '15 phút', customer: 'Minh' },
+      { id: 2844, status: 'ready', table: 9, items: [{name: 'Latte', qty: 1, price: 50000}, {name: 'Signature', qty: 1, price: 80000}], time: '12 phút', customer: 'Thu Hà' },
+    ];
+    let tableStatus = { 1: 'empty', 2: 'ready', 3: 'empty', 4: 'waiting', 5: 'empty', 6: 'empty', 7: 'cooking', 8: 'empty', 9: 'ready', 10: 'empty' };
+
+    // ==================== TOAST ====================
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = message;
+      toast.style.background = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--warning)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // ==================== TAB SWITCHING ====================
+    let currentTab = 'all';
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderOrders();
+    }
+
+    // ==================== RENDER ORDERS ====================
+    function renderOrders() {
+      const container = document.getElementById('ordersContainer');
+      let filtered = orders;
+      if (currentTab === 'waiting') filtered = orders.filter(o => o.status === 'waiting');
+      else if (currentTab === 'cooking') filtered = orders.filter(o => o.status === 'cooking');
+      else if (currentTab === 'ready') filtered = orders.filter(o => o.status === 'ready');
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Không có đơn hàng</p></div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(order => {
+        const statusColors = { waiting: 'var(--warning)', cooking: 'var(--primary)', ready: 'var(--success)' };
+        const statusText = { waiting: 'Chờ xác nhận', cooking: 'Đang làm', ready: 'Sẵn sàng' };
+        const itemsHtml = order.items.map(i => `<span class="order-tag">${i.qty > 1 ? i.qty + 'x ' : ''}${i.name}</span>`).join('');
+        const total = order.items.reduce((sum, i) => sum + i.price, 0);
+
+        return `
+          <div class="order-card" style="border-left: 4px solid ${statusColors[order.status]}">
+            <div class="order-header">
+              <div>
+                <span class="order-id">#${order.id}</span>
+                <span class="order-table">🪑 Bàn ${order.table.toString().padStart(2, '0')}</span>
+              </div>
+              <div class="order-meta">
+                <span class="order-time">⏱️ ${order.time}</span>
+                <span class="order-customer">👤 ${order.customer}</span>
+              </div>
+            </div>
+            <div class="order-items">${itemsHtml}</div>
+            <div class="order-footer">
+              <span class="order-total">${total.toLocaleString()}đ</span>
+              <div class="order-actions">
+                ${order.status === 'waiting' ? `
+                  <button class="action-btn reject" onclick="rejectOrder(${order.id})">✕ Hủy</button>
+                  <button class="action-btn confirm" onclick="confirmOrder(${order.id})">✓ Xác nhận</button>
+                ` : order.status === 'cooking' ? `
+                  <button class="action-btn ready" onclick="markReady(${order.id})">✅ Xong</button>
+                ` : `
+                  <button class="action-btn serve" onclick="serveOrder(${order.id})">📢 Gọi khách</button>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== ORDER ACTIONS ====================
+    function confirmOrder(id) {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        order.status = 'cooking';
+        order.time = '0 phút';
+        renderOrders();
+        showToast(`Đã xác nhận đơn #${id}`);
+      }
+    }
+
+    function rejectOrder(id) {
+      const order = orders.find(o => o.id === id);
+      if (order && confirm('Hủy đơn hàng #' + id + '?')) {
+        orders = orders.filter(o => o.id !== id);
+        renderOrders();
+        showToast(`Đã hủy đơn #${id}`, 'warning');
+      }
+    }
+
+    function markReady(id) {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        order.status = 'ready';
+        order.time = '✓ Xong';
+        renderOrders();
+        showToast(`Đơn #${id} đã sẵn sàng!`);
+      }
+    }
+
+    function serveOrder(id) {
+      const order = orders.find(o => o.id === id);
+      if (order && confirm('Đã phục vụ đơn #' + id + '?')) {
+        orders = orders.filter(o => o.id !== id);
+        renderOrders();
+        showToast(`Đã phục vụ đơn #${id}`);
+      }
+    }
+
+    // ==================== TABLE MAP ====================
+    function selectTable(el, num) {
+      document.querySelectorAll('.table-option').forEach(t => t.classList.remove('selected'));
+      el.classList.add('selected');
+      showToast(`Đã chọn Bàn ${num.toString().padStart(2, '0')}`);
+    }
+
+    function getTableStatusClass(status) {
+      return status === 'occupied' ? 'occupied' : status === 'cooking' ? 'occupied cooking' : '';
+    }
+
+    // ==================== MENU ITEM ====================
+    function toggleItem(el) {
+      el.classList.toggle('selected');
+      const qtyEl = el.querySelector('.qty-num');
+      if (el.classList.contains('selected') && parseInt(qtyEl.textContent) === 0) {
+        qtyEl.textContent = '1';
+      }
+      updateOrderSummary();
+    }
+
+    function changeItemQty(btn, delta) {
+      const qtyEl = btn.parentElement.querySelector('.qty-num');
+      let qty = parseInt(qtyEl.textContent) + delta;
+      if (qty < 0) qty = 0;
+      qtyEl.textContent = qty;
+
+      const item = btn.closest('.menu-item');
+      if (qty === 0) {
+        item.classList.remove('selected');
+      } else if (!item.classList.contains('selected')) {
+        item.classList.add('selected');
+      }
+      updateOrderSummary();
+    }
+
+    // ==================== ORDER SUMMARY ====================
+    function updateOrderSummary() {
+      const selectedItems = [];
+      document.querySelectorAll('.menu-item.selected').forEach(item => {
+        const qty = parseInt(item.querySelector('.qty-num').textContent);
+        if (qty > 0) {
+          const name = item.querySelector('h4').textContent;
+          const priceText = item.querySelector('.price').textContent;
+          const price = parseInt(priceText.replace(/[^\d]/g, '')) * 1000;
+          for (let i = 0; i < qty; i++) selectedItems.push({ name, price });
+        }
+      });
+
+      const summaryEl = document.querySelector('.order-summary');
+      if (selectedItems.length === 0) {
+        summaryEl.innerHTML = '<div class="summary-row"><span>Chưa chọn sản phẩm</span></div>';
+      } else {
+        const total = selectedItems.reduce((sum, i) => sum + i.price, 0);
+        const itemsHtml = selectedItems.map(i => `<div class="summary-row"><span>${i.name}</span><span>${i.price.toLocaleString()}đ</span></div>`).join('');
+        summaryEl.innerHTML = itemsHtml + `<div class="summary-row total"><span>Tổng cộng</span><span>${total.toLocaleString()}đ</span></div>`;
+      }
+    }
+
+    // ==================== BOTTOM SHEET ====================
+    function openNewOrder() {
+      document.getElementById('backdrop').classList.add('active');
+      document.getElementById('newOrderSheet').classList.add('active');
+      // Reset state
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('selected');
+        item.querySelector('.qty-num').textContent = '0';
+      });
+      document.querySelectorAll('.table-option').forEach(t => t.classList.remove('selected'));
+      document.querySelector('.table-option:nth-child(4)').classList.add('selected');
+      updateOrderSummary();
+    }
+
+    function closeNewOrder() {
+      document.getElementById('backdrop').classList.remove('active');
+      document.getElementById('newOrderSheet').classList.remove('active');
+    }
+
+    function submitOrder() {
+      const selectedItems = [];
+      document.querySelectorAll('.menu-item.selected').forEach(item => {
+        const qty = parseInt(item.querySelector('.qty-num').textContent);
+        if (qty > 0) {
+          const name = item.querySelector('h4').textContent;
+          const priceText = item.querySelector('.price').textContent;
+          const price = parseInt(priceText.replace(/[^\d]/g, '')) * 1000;
+          selectedItems.push({ name, qty, price });
+        }
+      });
+
+      if (selectedItems.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 sản phẩm!', 'warning');
+        return;
+      }
+
+      const tableNum = parseInt(document.querySelector('.table-option.selected')?.textContent || '1');
+      const newOrder = {
+        id: 2848 + orders.length,
+        status: 'waiting',
+        table: tableNum,
+        items: selectedItems,
+        time: 'Vừa xong',
+        customer: 'Tại quán'
+      };
+      orders.unshift(newOrder);
+      tableStatus[tableNum] = 'occupied';
+      closeNewOrder();
+      renderOrders();
+      showToast(`Đã tạo đơn #${newOrder.id} cho Bàn ${tableNum}!`);
+    }
+
+    // ==================== STATS UPDATE ====================
+    function updateStats() {
+      document.getElementById('statWaiting').textContent = orders.filter(o => o.status === 'waiting').length;
+      document.getElementById('statCooking').textContent = orders.filter(o => o.status === 'cooking').length;
+      document.getElementById('statReady').textContent = orders.filter(o => o.status === 'ready').length;
+    }
+
+    // ==================== QUICK ACTIONS ====================
+    document.querySelector('.quick-btn.takeaway')?.addEventListener('click', function() {
+      showToast('Đang tạo đơn mang đi...');
+    });
+
+    document.querySelector('.quick-btn.scan')?.addEventListener('click', function() {
+      showToast('Đang mở camera quét QR...');
+    });
+
+    // ==================== INIT ====================
+    renderOrders();
+    updateStats();
+    updateOrderSummary();
+
+    // Add toast element
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span class="toast-text" id="toastText">Thành công!</span>
+      </div>
+    `);
+  </script>
+</body>
+</html>

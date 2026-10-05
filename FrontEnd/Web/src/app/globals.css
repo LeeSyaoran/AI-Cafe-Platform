@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --cafe-bg: #0B0F19;
+  --cafe-bg-secondary: #0F172A;
+  --cafe-card: #1E293B;
+  --cafe-border: #334155;
+  --cafe-primary: #5A6BFF;
+  --cafe-secondary: #8B5CF6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--cafe-bg);
+  color: #FFFFFF;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cafe-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cafe-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Gradient utilities */
+.bg-cafe-gradient {
+  background: linear-gradient(135deg, #1E1B4B 0%, #172554 50%, #0F172A 100%);
+}
+
+.bg-cafe-primary {
+  background: linear-gradient(135deg, #5A6BFF 0%, #8B5CF6 100%);
+}
+
+.bg-cafe-gold {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+/* Kanban column styles */
+.kanban-column {
+  min-height: 710px;
+}
+
+.kanban-column::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Animation for real-time updates */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Card hover effects */
+.product-card:hover {
+  transform: translateY(-4px);
+  transition: transform 0.2s ease;
+}
+
+/* Status badge variants */
+.status-pending { background-color: #78350F; color: #FDE68A; }
+.status-preparing { background-color: #312E81; color: #C7D2FE; }
+.status-ready { background-color: #581C87; color: #E9D5FF; }
+.status-completed { background-color: #064E3B; color: #A7F3D0; }

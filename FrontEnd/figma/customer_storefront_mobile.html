@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Café - Storefront Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5A6BFF;
+      --primary-dark: #4855e8;
+      --primary-light: #a4b4ff;
+      --bg-dark: #0B0F19;
+      --bg-card: #1E293B;
+      --bg-card-hover: #283548;
+      --border: #334155;
+      --text: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --gold: #F59E0B;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Mobile First Container */
+    .container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #1a1f35 0%, var(--bg-dark) 100%);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: rgba(11, 15, 25, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), #8B5CF6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover .logo-icon {
+      transform: rotate(-10deg) scale(1.05);
+    }
+
+    .logo-text {
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .logo-text span { color: var(--primary); }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 24px 20px 32px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(90, 107, 255, 0.15);
+      border: 1px solid rgba(90, 107, 255, 0.3);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--primary-light);
+      margin-bottom: 16px;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff 0%, #94A3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+
+    /* QR Section */
+    .qr-section {
+      padding: 0 20px 32px;
+    }
+
+    .qr-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+
+    .qr-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 8px 32px rgba(90, 107, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .qr-placeholder {
+      width: 80px;
+      height: 80px;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+
+    .qr-card:hover .qr-placeholder {
+      transform: rotate(5deg) scale(1.02);
+    }
+
+    .qr-placeholder svg {
+      width: 60px;
+      height: 60px;
+    }
+
+    .qr-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .qr-info p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .scan-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--primary);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(90, 107, 255, 0.3);
+    }
+
+    .scan-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(90, 107, 255, 0.4);
+    }
+
+    .scan-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(90, 107, 255, 0.3);
+    }
+
+    /* Menu Section */
+    .menu-section {
+      padding: 0 20px 100px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .see-all {
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .see-all:hover {
+      color: var(--primary-light);
+    }
+
+    .see-all::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .see-all:hover::after {
+      width: 100%;
+    }
+
+    /* Menu Grid */
+    .menu-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Drink Card */
+    .drink-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drink-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .drink-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(90, 107, 255, 0.05) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .drink-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(90, 107, 255, 0.1);
+    }
+
+    .drink-card:hover::before {
+      opacity: 1;
+    }
+
+    .drink-card:hover::after {
+      opacity: 1;
+    }
+
+    .drink-card:active {
+      transform: translateY(-2px);
+    }
+
+    .drink-card.espresso::before { background: linear-gradient(90deg, #64748B, #94A3B8); }
+    .drink-card.latte::before { background: linear-gradient(90deg, var(--primary), #8B5CF6); }
+    .drink-card.signature::before { background: linear-gradient(90deg, #F59E0B, #D97706); }
+    .drink-card.premium::before { background: linear-gradient(90deg, #EC4899, #A855F7); }
+
+    .drink-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .drink-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drink-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .drink-card:hover .drink-icon {
+      transform: scale(1.1) rotate(-5deg);
+    }
+
+    .drink-card.espresso .drink-icon { background: rgba(100, 116, 139, 0.2); }
+    .drink-card.latte .drink-icon { background: rgba(90, 107, 255, 0.2); }
+    .drink-card.signature .drink-icon { background: rgba(245, 158, 11, 0.2); }
+    .drink-card.premium .drink-icon { background: rgba(236, 72, 153, 0.2); }
+
+    .drink-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: color 0.2s;
+    }
+
+    .drink-card:hover .drink-name {
+      color: var(--primary-light);
+    }
+
+    .drink-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .drink-price {
+      text-align: right;
+    }
+
+    .price-tag {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: transform 0.2s;
+    }
+
+    .drink-card:hover .price-tag {
+      transform: scale(1.05);
+    }
+
+    .price-unit {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Features List */
+    .drink-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .drink-card:hover .feature-tag {
+      transform: translateY(-1px);
+    }
+
+    .feature-tag.highlight {
+      background: rgba(90, 107, 255, 0.15);
+      color: var(--primary-light);
+    }
+
+    .feature-tag.credits {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      padding: 12px 20px 24px;
+      display: flex;
+      justify-content: space-around;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 8px 16px;
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: 20px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 0 0 3px 3px;
+      transition: transform 0.25s ease;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item:hover::before, .nav-item.active::before {
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    .nav-item.active {
+      background: rgba(90, 107, 255, 0.1);
+    }
+
+    .nav-icon {
+      font-size: 22px;
+      transition: transform 0.25s ease;
+    }
+
+    .nav-item:hover .nav-icon {
+      transform: translateY(-2px);
+    }
+
+    .nav-item:active .nav-icon {
+      transform: translateY(1px) scale(0.9);
+    }
+
+    /* AI Preview Section */
+    .ai-preview {
+      margin: 24px 0;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(90, 107, 255, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      border: 1px solid rgba(90, 107, 255, 0.2);
+      border-radius: 20px;
+      animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+
+    .ai-preview h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ai-tools {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .ai-tool {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-tool:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(90, 107, 255, 0.2);
+    }
+
+    .ai-tool:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    .ai-tool-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: transform 0.3s ease;
+    }
+
+    .ai-tool:hover .ai-tool-icon {
+      transform: rotate(-8deg) scale(1.1);
+    }
+
+    .ai-tool.chat .ai-tool-icon { background: linear-gradient(135deg, #5A6BFF, #8B5CF6); }
+    .ai-tool.code .ai-tool-icon { background: linear-gradient(135deg, #10B981, #059669); }
+    .ai-tool.image .ai-tool-icon { background: linear-gradient(135deg, #F59E0B, #D97706); }
+    .ai-tool.video .ai-tool-icon { background: linear-gradient(135deg, #EC4899, #A855F7); }
+
+    .ai-tool span {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .ai-tool:hover span {
+      color: var(--text);
+    }
+
+    /* Desktop Breakpoint */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 100%;
+        padding: 0 40px;
+      }
+
+      .hero h1 { font-size: 36px; }
+
+      .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .ai-tools {
+        grid-template-columns: repeat(4, 1fr);
+        max-width: 400px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">☕</div>
+        <div class="logo-text">AI <span>Café</span></div>
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn">🔔</div>
+        <div class="icon-btn">👤</div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">Quán đang mở cửa</div>
+      <h1>Chào mừng đến với<br>AI Café</h1>
+      <p>Đồ uống ngon + AI không giới hạn<br>Mua 1 lần, trải nghiệm cả ngày</p>
+    </section>
+
+    <!-- QR Code -->
+    <section class="qr-section">
+      <div class="qr-card">
+        <div class="qr-placeholder">
+          <svg viewBox="0 0 100 100" fill="#000">
+            <rect x="10" y="10" width="25" height="25" rx="2"/>
+            <rect x="65" y="10" width="25" height="25" rx="2"/>
+            <rect x="10" y="65" width="25" height="25" rx="2"/>
+            <rect x="40" y="40" width="20" height="20" rx="2"/>
+            <rect x="65" y="65" width="8" height="8"/>
+            <rect x="77" y="65" width="8" height="8"/>
+            <rect x="65" y="77" width="8" height="8"/>
+          </svg>
+        </div>
+        <div class="qr-info">
+          <h3>Đăng nhập bằng QR</h3>
+          <p>Quét mã tại quầy hoặc trên bàn</p>
+          <button class="scan-btn">📷 Quét QR Code</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Tools Preview -->
+    <section class="menu-section">
+      <div class="ai-preview">
+        <h4>🤖 Công cụ AI có sẵn</h4>
+        <div class="ai-tools">
+          <div class="ai-tool chat">
+            <div class="ai-tool-icon">💬</div>
+            <span>Chat</span>
+          </div>
+          <div class="ai-tool code">
+            <div class="ai-tool-icon">💻</div>
+            <span>Code</span>
+          </div>
+          <div class="ai-tool image">
+            <div class="ai-tool-icon">🖼️</div>
+            <span>Image</span>
+          </div>
+          <div class="ai-tool video">
+            <div class="ai-tool-icon">🎬</div>
+            <span>Video</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu -->
+      <div class="section-header">
+        <h2 class="section-title">🍹 Thực đơn</h2>
+        <a href="#" class="see-all">Xem tất cả →</a>
+      </div>
+
+      <div class="menu-grid">
+        <!-- Espresso -->
+        <div class="drink-card espresso">
+          <div class="drink-header">
+            <div class="drink-info">
+              <div class="drink-icon">☕</div>
+              <div>
+                <div class="drink-name">Espresso</div>
+                <div class="drink-desc">Cà phê + 2,000 Credits</div>
+              </div>
+            </div>
+            <div class="drink-price">
+              <div class="price-tag">30K</div>
+            </div>
+          </div>
+          <div class="drink-features">
+            <span class="feature-tag credits">💰 2,000 Credits</span>
+            <span class="feature-tag">⏱️ 1h Workspace</span>
+            <span class="feature-tag">🤖 Economy AI</span>
+          </div>
+        </div>
+
+        <!-- Latte -->
+        <div class="drink-card latte">
+          <div class="drink-header">
+            <div class="drink-info">
+              <div class="drink-icon">🥛</div>
+              <div>
+                <div class="drink-name">Latte</div>
+                <div class="drink-desc">Latte + 5,000 Credits</div>
+              </div>
+            </div>
+            <div class="drink-price">
+              <div class="price-tag">50K</div>
+            </div>
+          </div>
+          <div class="drink-features">
+            <span class="feature-tag credits highlight">💰 5,000 Credits</span>
+            <span class="feature-tag">⏱️ 2h Workspace</span>
+            <span class="feature-tag highlight">🤖 Standard AI</span>
+            <span class="feature-tag">🔓 Member Upgrades</span>
+          </div>
+        </div>
+
+        <!-- Signature -->
+        <div class="drink-card signature">
+          <div class="drink-header">
+            <div class="drink-info">
+              <div class="drink-icon">⭐</div>
+              <div>
+                <div class="drink-name">Signature</div>
+                <div class="drink-desc">Signature + 10,000 Credits</div>
+              </div>
+            </div>
+            <div class="drink-price">
+              <div class="price-tag">80K</div>
+            </div>
+          </div>
+          <div class="drink-features">
+            <span class="feature-tag credits highlight">💰 10,000 Credits</span>
+            <span class="feature-tag">⏱️ 4h Workspace</span>
+            <span class="feature-tag highlight">🤖 Premium AI</span>
+            <span class="feature-tag">🎬 Video Quota</span>
+          </div>
+        </div>
+
+        <!-- Premium -->
+        <div class="drink-card premium">
+          <div class="drink-header">
+            <div class="drink-info">
+              <div class="drink-icon">👑</div>
+              <div>
+                <div class="drink-name">Premium</div>
+                <div class="drink-desc">Premium + 18,000 Credits</div>
+              </div>
+            </div>
+            <div class="drink-price">
+              <div class="price-tag">120K</div>
+            </div>
+          </div>
+          <div class="drink-features">
+            <span class="feature-tag credits highlight">💰 18,000 Credits</span>
+            <span class="feature-tag">⏱️ 8h Workspace</span>
+            <span class="feature-tag highlight">🤖 Premium+ AI</span>
+            <span class="feature-tag">⚡ Priority Queue</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <a class="nav-item active">
+        <span class="nav-icon">🏠</span>
+        <span>Trang chủ</span>
+      </a>
+      <a class="nav-item">
+        <span class="nav-icon">🤖</span>
+        <span>AI Tools</span>
+      </a>
+      <a class="nav-item">
+        <span class="nav-icon">👛</span>
+        <span>Ví</span>
+      </a>
+      <a class="nav-item">
+        <span class="nav-icon">📋</span>
+        <span>Đơn hàng</span>
+      </a>
+      <a class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span>Tài khoản</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Modal Overlay -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-icon" id="modalIcon">☕</div>
+      <h2 class="modal-title" id="modalTitle">Espresso</h2>
+      <p class="modal-desc" id="modalDesc">Cà phê + 2,000 Credits</p>
+
+      <div class="modal-features" id="modalFeatures">
+        <span class="modal-feature">⏱️ 1h Workspace</span>
+        <span class="modal-feature">🤖 Economy AI</span>
+      </div>
+
+      <div class="modal-price">
+        <span class="modal-price-value" id="modalPrice">30,000đ</span>
+        <span class="modal-price-credits" id="modalCredits">+2,000 Credits</span>
+      </div>
+
+      <div class="modal-quantity">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-value" id="qtyValue">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+
+      <button class="modal-order-btn" onclick="orderNow()">🛒 Đặt hàng ngay</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">✓</span>
+    <span class="toast-text" id="toastText">Thành công!</span>
+  </div>
+
+  <style>
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 24px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      animation: modalIn 0.3s ease;
+      position: relative;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .modal-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    .modal-content.espresso .modal-icon { background: rgba(100, 116, 139, 0.2); }
+    .modal-content.latte .modal-icon { background: rgba(90, 107, 255, 0.2); }
+    .modal-content.signature .modal-icon { background: rgba(245, 158, 11, 0.2); }
+    .modal-content.premium .modal-icon { background: rgba(236, 72, 153, 0.2); }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .modal-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .modal-features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .modal-feature {
+      padding: 6px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .modal-price {
+      margin-bottom: 20px;
+    }
+
+    .modal-price-value {
+      display: block;
+      font-size: 32px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--primary);
+    }
+
+    .modal-price-credits {
+      font-size: 14px;
+      color: var(--success);
+    }
+
+    .modal-quantity {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .qty-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .qty-btn:hover {
+      border-color: var(--primary);
+      background: rgba(90, 107, 255, 0.1);
+    }
+
+    .qty-btn:active {
+      transform: scale(0.95);
+    }
+
+    .qty-value {
+      font-size: 28px;
+      font-weight: 700;
+      min-width: 40px;
+    }
+
+    .modal-order-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-order-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--success);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1001;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+
+  <script>
+    // Menu Data
+    const menuData = {
+      espresso: {
+        icon: '☕',
+        name: 'Espresso',
+        desc: 'Cà phê + 2,000 Credits',
+        price: '30,000đ',
+        credits: '+2,000 Credits',
+        features: ['⏱️ 1h Workspace', '🤖 Economy AI', '📝 50 lượt'],
+        tier: 'espresso'
+      },
+      latte: {
+        icon: '🥛',
+        name: 'Latte',
+        desc: 'Latte + 5,000 Credits',
+        price: '50,000đ',
+        credits: '+5,000 Credits',
+        features: ['⏱️ 2h Workspace', '🤖 Standard AI', '📝 200 lượt', '🔓 Member'],
+        tier: 'latte'
+      },
+      signature: {
+        icon: '⭐',
+        name: 'Signature',
+        desc: 'Signature + 10,000 Credits',
+        price: '80,000đ',
+        credits: '+10,000 Credits',
+        features: ['⏱️ 4h Workspace', '🤖 Premium AI', '🎬 Video', '📝 500 lượt'],
+        tier: 'signature'
+      },
+      premium: {
+        icon: '👑',
+        name: 'Premium',
+        desc: 'Premium + 18,000 Credits',
+        price: '120,000đ',
+        credits: '+18,000 Credits',
+        features: ['⏱️ 8h Workspace', '🤖 Premium+ AI', '⚡ Priority', '📝 1000 lượt'],
+        tier: 'premium'
+      }
+    };
+
+    // Bottom Navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', function() {
+        navItems.forEach(n => n.classList.remove('active'));
+        this.classList.add('active');
+        showToast('Đã chuyển trang: ' + this.querySelector('span:last-child').textContent);
+      });
+    });
+
+    // Menu Cards
+    const drinkCards = document.querySelectorAll('.drink-card');
+    drinkCards.forEach(card => {
+      card.addEventListener('click', function() {
+        const tier = this.classList.contains('espresso') ? 'espresso' :
+                     this.classList.contains('latte') ? 'latte' :
+                     this.classList.contains('signature') ? 'signature' : 'premium';
+        openMenuModal(tier);
+      });
+    });
+
+    // AI Tools
+    const aiTools = document.querySelectorAll('.ai-tool');
+    aiTools.forEach(tool => {
+      tool.addEventListener('click', function() {
+        const name = this.querySelector('span').textContent;
+        showToast('Mở AI: ' + name);
+      });
+    });
+
+    // Modal Functions
+    let currentQty = 1;
+
+    function openMenuModal(tier) {
+      const data = menuData[tier];
+      const modal = document.getElementById('modalOverlay');
+      const content = modal.querySelector('.modal-content');
+
+      content.className = 'modal-content ' + data.tier;
+      document.getElementById('modalIcon').textContent = data.icon;
+      document.getElementById('modalTitle').textContent = data.name;
+      document.getElementById('modalDesc').textContent = data.desc;
+      document.getElementById('modalPrice').textContent = data.price;
+      document.getElementById('modalCredits').textContent = data.credits;
+
+      const featuresHtml = data.features.map(f => `<span class="modal-feature">${f}</span>`).join('');
+      document.getElementById('modalFeatures').innerHTML = featuresHtml;
+
+      currentQty = 1;
+      document.getElementById('qtyValue').textContent = currentQty;
+
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    function changeQty(delta) {
+      currentQty = Math.max(1, Math.min(10, currentQty + delta));
+      document.getElementById('qtyValue').textContent = currentQty;
+    }
+
+    function orderNow() {
+      const name = document.getElementById('modalTitle').textContent;
+      closeModal();
+      showToast(`Đã đặt ${currentQty}x ${name}!`);
+    }
+
+    // Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Header actions
+    document.querySelector('.header-actions .icon-btn').addEventListener('click', function() {
+      showToast('Bạn có 3 thông báo mới!');
+    });
+
+    // Nav items
+    document.querySelectorAll('.nav-item').forEach((item, index) => {
+      item.addEventListener('click', function() {
+        const pages = ['Trang chủ', 'AI Tools', 'Ví', 'Đơn hàng', 'Tài khoản'];
+        showToast('Chuyển đến: ' + pages[index]);
+      });
+    });
+
+    // Menu cards
+    const drinkCards = document.querySelectorAll('.drink-card');
+    drinkCards.forEach(card => {
+      card.addEventListener('click', function() {
+        const tier = this.classList.contains('espresso') ? 'espresso' :
+                     this.classList.contains('latte') ? 'latte' :
+                     this.classList.contains('signature') ? 'signature' : 'premium';
+        openMenuModal(tier);
+      });
+    });
+
+    // AI tools
+    const aiTools = document.querySelectorAll('.ai-tool');
+    aiTools.forEach(tool => {
+      tool.addEventListener('click', function() {
+        const name = this.querySelector('span').textContent;
+        showToast('Mở AI: ' + name);
+      });
+    });
+
+    // QR Scan Button
+    document.querySelector('.scan-btn').addEventListener('click', function() {
+      showToast('Đang mở camera...');
+    });
+
+    // See All Link
+    document.querySelector('.see-all').addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Xem toàn bộ menu');
+    });
+
+    // Add full order flow
+    document.querySelectorAll('.drink-card').forEach((card, index) => {
+      card.addEventListener('dblclick', function() {
+        const tier = this.classList.contains('espresso') ? 'espresso' :
+                     this.classList.contains('latte') ? 'latte' :
+                     this.classList.contains('signature') ? 'signature' : 'premium';
+        openMenuModal(tier);
+      });
+    });
+  </script>
+</body>
+</html>

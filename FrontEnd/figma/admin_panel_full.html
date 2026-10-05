@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Café - Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5A6BFF;
+      --primary-dark: #4855e8;
+      --primary-light: #a4b4ff;
+      --bg-dark: #0B0F19;
+      --bg-sidebar: #0F172A;
+      --bg-card: #1E293B;
+      --bg-card-hover: #283548;
+      --border: #334155;
+      --text: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --error: #EF4444;
+      --gold: #F59E0B;
+      --pink: #EC4899;
+      --purple: #8B5CF6;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo h1 {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo span { color: var(--primary); }
+    .sidebar-logo p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    .nav-section { padding: 16px 12px; }
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+    }
+
+    .nav-item:hover { background: var(--bg-card); color: var(--text); }
+    .nav-item.active { background: rgba(90, 107, 255, 0.15); color: var(--primary); }
+
+    .nav-item .icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .nav-item.dashboard .icon { background: rgba(90, 107, 255, 0.2); }
+    .nav-item.orders .icon { background: rgba(16, 185, 129, 0.2); }
+    .nav-item.users .icon { background: rgba(236, 72, 153, 0.2); }
+    .nav-item.products .icon { background: rgba(168, 85, 247, 0.2); }
+    .nav-item.credits .icon { background: rgba(59, 130, 246, 0.2); }
+    .nav-item.qrcode .icon { background: rgba(14, 165, 233, 0.2); }
+    .nav-item.staff .icon { background: rgba(245, 158, 11, 0.2); }
+    .nav-item.promotion .icon { background: rgba(236, 72, 153, 0.2); }
+    .nav-item.inventory .icon { background: rgba(100, 116, 139, 0.2); }
+    .nav-item.analytics .icon { background: rgba(16, 185, 129, 0.2); }
+    .nav-item.settings .icon { background: rgba(100, 116, 139, 0.2); }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--primary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-card);
+      border-radius: 12px;
+    }
+
+    .user-avatar {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+    }
+
+    .user-details h4 { font-size: 14px; font-weight: 600; }
+    .user-details p { font-size: 12px; color: var(--text-secondary); }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 260px;
+      padding: 24px 32px;
+    }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .header-actions { display: flex; gap: 12px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--primary); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--error); color: #fff; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .stat-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+
+    .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+
+    .stat-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+
+    .stat-card.orders .stat-icon { background: rgba(16, 185, 129, 0.2); }
+    .stat-card.revenue .stat-icon { background: rgba(245, 158, 11, 0.2); }
+    .stat-card.users .stat-icon { background: rgba(236, 72, 153, 0.2); }
+    .stat-card.credits .stat-icon { background: rgba(59, 130, 246, 0.2); }
+
+    .stat-trend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .stat-trend.up { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .stat-trend.down { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .stat-value { font-size: 32px; font-weight: 800; margin-bottom: 4px; font-family: 'Space Grotesk', sans-serif; }
+    .stat-label { font-size: 14px; color: var(--text-secondary); }
+
+    /* Charts Row */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .chart-title { font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
+    .chart-container {
+      height: 250px;
+      background: linear-gradient(180deg, rgba(90, 107, 255, 0.1) 0%, transparent 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 200px;
+      padding: 20px 40px;
+    }
+
+    .chart-bar {
+      width: 40px;
+      background: linear-gradient(180deg, var(--primary), var(--purple));
+      border-radius: 8px 8px 0 0;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .chart-bar:hover { filter: brightness(1.2); transform: scaleY(1.05); }
+
+    .chart-bar-label {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .chart-bar-value {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Donut Chart */
+    .donut-chart {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--primary) 0deg 126deg,
+        var(--warning) 126deg 216deg,
+        var(--success) 216deg 288deg,
+        var(--pink) 288deg 360deg
+      );
+      margin: 20px auto;
+      position: relative;
+    }
+
+    .donut-chart::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      background: var(--bg-card);
+      border-radius: 50%;
+    }
+
+    .chart-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Tables */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-title { font-size: 16px; font-weight: 700; }
+
+    .table-actions { display: flex; gap: 12px; align-items: center; }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .search-input input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      width: 200px;
+    }
+
+    .search-input input::placeholder { color: var(--text-secondary); }
+
+    .filter-dropdown {
+      position: relative;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      text-align: left;
+      padding: 14px 24px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--bg-dark);
+      cursor: pointer;
+    }
+
+    th:hover { color: var(--text); }
+
+    td {
+      padding: 16px 24px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover td { background: var(--bg-card-hover); }
+    tr:last-child td { border-bottom: none; }
+
+    .user-cell { display: flex; align-items: center; gap: 12px; }
+
+    .user-avatar-sm {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .status-badge.completed { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .status-badge.cancelled { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+    .status-badge.active { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .status-badge.inactive { background: rgba(100, 116, 139, 0.15); color: var(--text-secondary); }
+    .status-badge.blocked { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tier-badge.espresso { background: rgba(100, 116, 139, 0.15); color: var(--text-secondary); }
+    .tier-badge.latte { background: rgba(90, 107, 255, 0.15); color: var(--primary-light); }
+    .tier-badge.signature { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
+    .tier-badge.premium { background: rgba(236, 72, 153, 0.15); color: var(--pink); }
+
+    .action-btns { display: flex; gap: 8px; }
+
+    .action-btn-sm {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .action-btn-sm:hover { transform: scale(1.1); }
+    .action-btn-sm.view { background: rgba(59, 130, 246, 0.2); color: #3B82F6; }
+    .action-btn-sm.edit { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .action-btn-sm.delete { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .pagination-info { font-size: 13px; color: var(--text-secondary); }
+
+    .pagination-btns { display: flex; gap: 8px; }
+
+    .page-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover, .page-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: 16px;
+      width: 500px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title { font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .modal-close:hover { background: var(--error); color: #fff; }
+
+    .modal-body { padding: 24px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-input:focus { outline: none; border-color: var(--primary); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* QR Grid */
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .qr-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .qr-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+
+    .qr-placeholder {
+      width: 120px;
+      height: 120px;
+      background: #fff;
+      border-radius: 12px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-code {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .qr-table { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .qr-status { font-size: 12px; color: var(--text-secondary); }
+
+    /* Product Card */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .product-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+
+    .product-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .product-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+
+    .product-card.espresso .product-icon { background: rgba(100, 116, 139, 0.2); }
+    .product-card.latte .product-icon { background: rgba(90, 107, 255, 0.2); }
+    .product-card.signature .product-icon { background: rgba(245, 158, 11, 0.2); }
+    .product-card.premium .product-icon { background: rgba(236, 72, 153, 0.2); }
+
+    .product-price { text-align: right; }
+    .product-price .main { font-size: 20px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
+    .product-price .credits { font-size: 12px; color: var(--success); }
+
+    .product-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; font-family: 'Space Grotesk', sans-serif; }
+    .product-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+    .product-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .feature-tag {
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Staff Grid */
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .staff-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      transition: all 0.2s;
+    }
+
+    .staff-card:hover { border-color: var(--primary); }
+
+    .staff-avatar {
+      width: 60px; height: 60px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .staff-info { flex: 1; }
+    .staff-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .staff-role { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+
+    .staff-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .staff-stat { display: flex; align-items: center; gap: 4px; }
+
+    /* Promotion Cards */
+    .promo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .promo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .promo-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+
+    .promo-header {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(90, 107, 255, 0.2), rgba(139, 92, 246, 0.2));
+      border-bottom: 1px solid var(--border);
+    }
+
+    .promo-code {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-bottom: 4px;
+    }
+
+    .promo-desc { font-size: 13px; color: var(--text-secondary); }
+
+    .promo-body { padding: 20px; }
+
+    .promo-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .promo-stat:last-child { border-bottom: none; }
+    .promo-stat .label { color: var(--text-secondary); }
+    .promo-stat .value { font-weight: 600; }
+
+    .promo-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Inventory */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .inventory-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .inventory-card:hover { border-color: var(--primary); }
+
+    .inventory-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+    .inventory-name { font-size: 16px; font-weight: 700; }
+
+    .inventory-stock {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .inventory-stock.high { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .inventory-stock.low { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .inventory-stock.out { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .inventory-bar {
+      height: 8px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .inventory-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .inventory-fill.high { background: var(--success); }
+    .inventory-fill.low { background: var(--warning); }
+    .inventory-fill.out { background: var(--error); }
+
+    .inventory-stats { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
+
+    /* Settings */
+    .settings-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 24px;
+    }
+
+    .settings-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-title { font-size: 16px; font-weight: 700; }
+    .settings-desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+    .settings-body { padding: 24px; }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-row:last-child { border-bottom: none; }
+
+    .settings-label h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .settings-label p { font-size: 13px; color: var(--text-secondary); }
+
+    /* Toggle Switch */
+    .toggle {
+      width: 48px;
+      height: 26px;
+      background: var(--bg-dark);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .toggle.active { background: var(--primary); }
+
+    .toggle::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .toggle.active::before { left: 25px; }
+
+    /* Credit Transaction */
+    .credit-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .credit-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .credit-item:hover { background: var(--bg-card-hover); }
+    .credit-item:last-child { border-bottom: none; }
+
+    .credit-info { display: flex; align-items: center; gap: 12px; }
+
+    .credit-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    .credit-icon.add { background: rgba(16, 185, 129, 0.2); }
+    .credit-icon.use { background: rgba(239, 68, 68, 0.2); }
+    .credit-icon.refund { background: rgba(245, 158, 11, 0.2); }
+
+    .credit-user h4 { font-size: 14px; font-weight: 600; }
+    .credit-user p { font-size: 12px; color: var(--text-secondary); }
+
+    .credit-amount { text-align: right; }
+    .credit-amount .value { font-size: 16px; font-weight: 700; }
+    .credit-amount .value.add { color: var(--success); }
+    .credit-amount .value.use { color: var(--error); }
+    .credit-amount .value.refund { color: var(--warning); }
+    .credit-amount .time { font-size: 11px; color: var(--text-secondary); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { border-color: var(--primary); color: var(--text); }
+    .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .main-content { margin-left: 0; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Page Views */
+    .page-view { display: none; }
+    .page-view.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h1>☕ AI <span>Café</span></h1>
+        <p>Admin Panel v2.0</p>
+      </div>
+
+      <nav class="nav-section">
+        <div class="nav-section-title">Tổng quan</div>
+        <div class="nav-item dashboard active" onclick="showPage('dashboard')">
+          <span class="icon">📊</span>
+          Dashboard
+        </div>
+        <div class="nav-item orders" onclick="showPage('orders')">
+          <span class="icon">🧾</span>
+          Đơn hàng
+          <span class="nav-badge">12</span>
+        </div>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-section-title">Quản lý</div>
+        <div class="nav-item users" onclick="showPage('users')">
+          <span class="icon">👥</span>
+          Người dùng
+        </div>
+        <div class="nav-item products" onclick="showPage('products')">
+          <span class="icon">🍹</span>
+          Sản phẩm
+        </div>
+        <div class="nav-item credits" onclick="showPage('credits')">
+          <span class="icon">💰</span>
+          Credits
+        </div>
+        <div class="nav-item qrcode" onclick="showPage('qrcode')">
+          <span class="icon">📱</span>
+          QR Codes
+        </div>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-section-title">Vận hành</div>
+        <div class="nav-item staff" onclick="showPage('staff')">
+          <span class="icon">👔</span>
+          Nhân viên
+        </div>
+        <div class="nav-item promotion" onclick="showPage('promotion')">
+          <span class="icon">🎁</span>
+          Khuyến mãi
+        </div>
+        <div class="nav-item inventory" onclick="showPage('inventory')">
+          <span class="icon">📦</span>
+          Kho hàng
+        </div>
+      </nav>
+
+      <nav class="nav-section">
+        <div class="nav-section-title">Hệ thống</div>
+        <div class="nav-item analytics" onclick="showPage('analytics')">
+          <span class="icon">📈</span>
+          Analytics
+        </div>
+        <div class="nav-item settings" onclick="showPage('settings')">
+          <span class="icon">⚙️</span>
+          Cài đặt
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">QT</div>
+          <div class="user-details">
+            <h4>Quản trị viên</h4>
+            <p>admin@aicafe.vn</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page-view active">
+        <div class="page-header">
+          <h1 class="page-title">Dashboard</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📅 Tuần này</button>
+            <button class="btn btn-primary" onclick="openModal('newOrder')">+ Tạo đơn</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card orders">
+            <div class="stat-header">
+              <div class="stat-icon">🧾</div>
+              <div class="stat-trend up">↑ 12%</div>
+            </div>
+            <div class="stat-value">1,247</div>
+            <div class="stat-label">Đơn hàng tuần này</div>
+          </div>
+          <div class="stat-card revenue">
+            <div class="stat-header">
+              <div class="stat-icon">💰</div>
+              <div class="stat-trend up">↑ 18%</div>
+            </div>
+            <div class="stat-value">28.5M</div>
+            <div class="stat-label">Doanh thu (VNĐ)</div>
+          </div>
+          <div class="stat-card users">
+            <div class="stat-header">
+              <div class="stat-icon">👥</div>
+              <div class="stat-trend up">↑ 8%</div>
+            </div>
+            <div class="stat-value">3,892</div>
+            <div class="stat-label">Người dùng</div>
+          </div>
+          <div class="stat-card credits">
+            <div class="stat-header">
+              <div class="stat-icon">⚡</div>
+              <div class="stat-trend down">↓ 5%</div>
+            </div>
+            <div class="stat-value">12.4M</div>
+            <div class="stat-label">Credits đã dùng</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Doanh thu theo ngày</h3>
+              <select class="form-input" style="width: auto;">
+                <option>7 ngày qua</option>
+                <option>30 ngày qua</option>
+                <option>90 ngày qua</option>
+              </select>
+            </div>
+            <div class="chart-container">
+              <div class="chart-bars">
+                <div class="chart-bar" style="height: 60%;">
+                  <span class="chart-bar-value">2.1M</span>
+                  <span class="chart-bar-label">T2</span>
+                </div>
+                <div class="chart-bar" style="height: 80%;">
+                  <span class="chart-bar-value">3.2M</span>
+                  <span class="chart-bar-label">T3</span>
+                </div>
+                <div class="chart-bar" style="height: 45%;">
+                  <span class="chart-bar-value">1.8M</span>
+                  <span class="chart-bar-label">T4</span>
+                </div>
+                <div class="chart-bar" style="height: 90%;">
+                  <span class="chart-bar-value">4.1M</span>
+                  <span class="chart-bar-label">T5</span>
+                </div>
+                <div class="chart-bar" style="height: 75%;">
+                  <span class="chart-bar-value">3.5M</span>
+                  <span class="chart-bar-label">T6</span>
+                </div>
+                <div class="chart-bar" style="height: 95%;">
+                  <span class="chart-bar-value">4.8M</span>
+                  <span class="chart-bar-label">T7</span>
+                </div>
+                <div class="chart-bar" style="height: 100%;">
+                  <span class="chart-bar-value">5.2M</span>
+                  <span class="chart-bar-label">CN</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Phân bổ đơn hàng</h3>
+            </div>
+            <div class="donut-chart"></div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background: var(--primary);"></span> Espresso</div>
+              <div class="legend-item"><span class="legend-dot" style="background: var(--warning);"></span> Latte</div>
+              <div class="legend-item"><span class="legend-dot" style="background: var(--success);"></span> Signature</div>
+              <div class="legend-item"><span class="legend-dot" style="background: var(--pink);"></span> Premium</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3 class="table-title">Đơn hàng gần đây</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-secondary" onclick="showPage('orders')">Xem tất cả →</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Sản phẩm</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#ORD-2847</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">TH</div>
+                    <span>Trần Hùng</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge latte">🥛 Latte</span></td>
+                <td>50,000đ</td>
+                <td><span class="status-badge pending">⏳ Chờ xác nhận</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>#ORD-2846</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">ML</div>
+                    <span>Mai Linh</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge signature">⭐ Signature</span></td>
+                <td>80,000đ</td>
+                <td><span class="status-badge completed">✓ Hoàn thành</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>#ORD-2845</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">QN</div>
+                    <span>Quang Nam</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge premium">👑 Premium</span></td>
+                <td>120,000đ</td>
+                <td><span class="status-badge completed">✓ Hoàn thành</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>#ORD-2844</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">VK</div>
+                    <span>Văn Khoa</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge espresso">☕ Espresso</span></td>
+                <td>30,000đ</td>
+                <td><span class="status-badge cancelled">✕ Đã hủy</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <div class="pagination-info">Hiển thị 1-4 của 1,247 đơn hàng</div>
+            <div class="pagination-btns">
+              <button class="page-btn" disabled>←</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">→</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Page -->
+      <div id="page-orders" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý đơn hàng</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📤 Export</button>
+            <button class="btn btn-primary" onclick="openModal('newOrder')">+ Tạo đơn mới</button>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active">Tất cả (1,247)</div>
+          <div class="tab">Chờ xác nhận (12)</div>
+          <div class="tab">Đang pha chế (8)</div>
+          <div class="tab">Sẵn sàng (5)</div>
+          <div class="tab">Hoàn thành (1,218)</div>
+          <div class="tab">Đã hủy (4)</div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-actions">
+              <div class="search-input">
+                🔍
+                <input type="text" placeholder="Tìm kiếm đơn hàng...">
+              </div>
+              <div class="filter-dropdown">
+                <button class="filter-btn">📋 Tất cả sản phẩm ▼</button>
+              </div>
+              <div class="filter-dropdown">
+                <button class="filter-btn">📅 Tất cả thời gian ▼</button>
+              </div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Sản phẩm</th>
+                <th>Table</th>
+                <th>Tổng tiền</th>
+                <th>Credits</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#ORD-2847</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">TH</div>
+                    <span>Trần Hùng</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge latte">🥛 Latte</span></td>
+                <td>Bàn 05</td>
+                <td>50,000đ</td>
+                <td>5,000</td>
+                <td><span class="status-badge pending">⏳ Chờ xác nhận</span></td>
+                <td>2 phút trước</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm edit">✓</button>
+                    <button class="action-btn-sm delete">✕</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>#ORD-2846</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">ML</div>
+                    <span>Mai Linh</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge signature">⭐ Signature</span></td>
+                <td>Bàn 12</td>
+                <td>80,000đ</td>
+                <td>10,000</td>
+                <td><span class="status-badge completed">✓ Hoàn thành</span></td>
+                <td>15 phút trước</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm delete">✕</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>#ORD-2845</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">QN</div>
+                    <span>Quang Nam</span>
+                  </div>
+                </td>
+                <td><span class="tier-badge premium">👑 Premium</span></td>
+                <td>Bàn 03</td>
+                <td>120,000đ</td>
+                <td>18,000</td>
+                <td><span class="status-badge completed">✓ Hoàn thành</span></td>
+                <td>28 phút trước</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm delete">✕</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <div class="pagination-info">Hiển thị 1-10 của 1,247 đơn hàng</div>
+            <div class="pagination-btns">
+              <button class="page-btn" disabled>←</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">...</button>
+              <button class="page-btn">125</button>
+              <button class="page-btn">→</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Page -->
+      <div id="page-users" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý người dùng</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📤 Export</button>
+            <button class="btn btn-primary" onclick="openModal('newUser')">+ Thêm người dùng</button>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active">Tất cả (3,892)</div>
+          <div class="tab">Hoạt động (2,156)</div>
+          <div class="tab">Không hoạt động (1,723)</div>
+          <div class="tab">Bị khóa (13)</div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-actions">
+              <div class="search-input">
+                🔍
+                <input type="text" placeholder="Tìm kiếm người dùng...">
+              </div>
+              <button class="filter-btn">📋 Lọc theo gói ▼</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Người dùng</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>Gói hiện tại</th>
+                <th>Credits</th>
+                <th>Đơn hàng</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">TH</div>
+                    <span>Trần Hùng</span>
+                  </div>
+                </td>
+                <td>tran.hung@email.com</td>
+                <td>0912 345 678</td>
+                <td><span class="tier-badge latte">🥛 Latte</span></td>
+                <td>3,250</td>
+                <td>24</td>
+                <td><span class="status-badge active">● Hoạt động</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                    <button class="action-btn-sm delete">🚫</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">ML</div>
+                    <span>Mai Linh</span>
+                  </div>
+                </td>
+                <td>mai.linh@email.com</td>
+                <td>0934 567 890</td>
+                <td><span class="tier-badge signature">⭐ Signature</span></td>
+                <td>8,400</td>
+                <td>42</td>
+                <td><span class="status-badge active">● Hoạt động</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                    <button class="action-btn-sm delete">🚫</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">QN</div>
+                    <span>Quang Nam</span>
+                  </div>
+                </td>
+                <td>quang.nam@email.com</td>
+                <td>0945 678 901</td>
+                <td><span class="tier-badge premium">👑 Premium</span></td>
+                <td>15,200</td>
+                <td>67</td>
+                <td><span class="status-badge active">● Hoạt động</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                    <button class="action-btn-sm delete">🚫</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-sm">VK</div>
+                    <span>Văn Khoa</span>
+                  </div>
+                </td>
+                <td>van.khoa@email.com</td>
+                <td>0956 789 012</td>
+                <td><span class="tier-badge espresso">☕ Espresso</span></td>
+                <td>800</td>
+                <td>8</td>
+                <td><span class="status-badge blocked">🚫 Bị khóa</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="action-btn-sm view">👁️</button>
+                    <button class="action-btn-sm edit">✏️</button>
+                    <button class="action-btn-sm delete">🔓</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <div class="pagination-info">Hiển thị 1-10 của 3,892 người dùng</div>
+            <div class="pagination-btns">
+              <button class="page-btn" disabled>←</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">→</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Page -->
+      <div id="page-products" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý sản phẩm</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('newProduct')">+ Thêm sản phẩm</button>
+          </div>
+        </div>
+
+        <div class="product-grid">
+          <div class="product-card espresso">
+            <div class="product-header">
+              <div class="product-icon">☕</div>
+              <div class="product-price">
+                <div class="main">30K</div>
+                <div class="credits">+2,000 Credits</div>
+              </div>
+            </div>
+            <h3 class="product-name">Espresso</h3>
+            <p class="product-desc">Cà phê + 2,000 Credits Economy AI</p>
+            <div class="product-features">
+              <span class="feature-tag">⏱️ 1h Workspace</span>
+              <span class="feature-tag">🤖 Economy AI</span>
+              <span class="feature-tag">📝 50 lượt</span>
+            </div>
+          </div>
+
+          <div class="product-card latte">
+            <div class="product-header">
+              <div class="product-icon">🥛</div>
+              <div class="product-price">
+                <div class="main">50K</div>
+                <div class="credits">+5,000 Credits</div>
+              </div>
+            </div>
+            <h3 class="product-name">Latte</h3>
+            <p class="product-desc">Latte + 5,000 Credits Standard AI</p>
+            <div class="product-features">
+              <span class="feature-tag">⏱️ 2h Workspace</span>
+              <span class="feature-tag">🤖 Standard AI</span>
+              <span class="feature-tag">📝 200 lượt</span>
+              <span class="feature-tag">🔓 Member</span>
+            </div>
+          </div>
+
+          <div class="product-card signature">
+            <div class="product-header">
+              <div class="product-icon">⭐</div>
+              <div class="product-price">
+                <div class="main">80K</div>
+                <div class="credits">+10,000 Credits</div>
+              </div>
+            </div>
+            <h3 class="product-name">Signature</h3>
+            <p class="product-desc">Signature + 10,000 Credits Premium AI</p>
+            <div class="product-features">
+              <span class="feature-tag">⏱️ 4h Workspace</span>
+              <span class="feature-tag">🤖 Premium AI</span>
+              <span class="feature-tag">🎬 Video</span>
+              <span class="feature-tag">📝 500 lượt</span>
+            </div>
+          </div>
+
+          <div class="product-card premium">
+            <div class="product-header">
+              <div class="product-icon">👑</div>
+              <div class="product-price">
+                <div class="main">120K</div>
+                <div class="credits">+18,000 Credits</div>
+              </div>
+            </div>
+            <h3 class="product-name">Premium</h3>
+            <p class="product-desc">Premium + 18,000 Credits Premium+ AI</p>
+            <div class="product-features">
+              <span class="feature-tag">⏱️ 8h Workspace</span>
+              <span class="feature-tag">🤖 Premium+ AI</span>
+              <span class="feature-tag">⚡ Priority</span>
+              <span class="feature-tag">📝 1000 lượt</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credits Page -->
+      <div id="page-credits" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý Credits</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📊 Báo cáo</button>
+            <button class="btn btn-success" onclick="openModal('topupCredits')">+ Nạp Credits</button>
+          </div>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2);">💰</div>
+            </div>
+            <div class="stat-value">45.2M</div>
+            <div class="stat-label">Tổng Credits đã bán</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(90, 107, 255, 0.2);">⚡</div>
+            </div>
+            <div class="stat-value">32.8M</div>
+            <div class="stat-label">Credits đã sử dụng</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2);">📦</div>
+            </div>
+            <div class="stat-value">12.4M</div>
+            <div class="stat-label">Credits còn lại</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(236, 72, 153, 0.2);">🔄</div>
+            </div>
+            <div class="stat-value">156</div>
+            <div class="stat-label">Giao dịch hôm nay</div>
+          </div>
+        </div>
+
+        <div class="credit-list">
+          <div class="table-header" style="padding: 16px 24px;">
+            <h3 class="table-title">Lịch sử giao dịch</h3>
+            <div class="table-actions">
+              <div class="search-input">
+                🔍
+                <input type="text" placeholder="Tìm kiếm...">
+              </div>
+            </div>
+          </div>
+
+          <div class="credit-item">
+            <div class="credit-info">
+              <div class="credit-icon add">+</div>
+              <div class="credit-user">
+                <h4>Trần Hùng</h4>
+                <p>Mua gói Latte - #ORD-2847</p>
+              </div>
+            </div>
+            <div class="credit-amount">
+              <div class="value add">+5,000</div>
+              <div class="time">2 phút trước</div>
+            </div>
+          </div>
+
+          <div class="credit-item">
+            <div class="credit-info">
+              <div class="credit-icon use">-</div>
+              <div class="credit-user">
+                <h4>Mai Linh</h4>
+                <p>Sử dụng AI Chat - 500 credits</p>
+              </div>
+            </div>
+            <div class="credit-amount">
+              <div class="value use">-500</div>
+              <div class="time">5 phút trước</div>
+            </div>
+          </div>
+
+          <div class="credit-item">
+            <div class="credit-info">
+              <div class="credit-icon refund">↩️</div>
+              <div class="credit-user">
+                <h4>Quang Nam</h4>
+                <p>Hoàn tiền gói Premium - #ORD-2840</p>
+              </div>
+            </div>
+            <div class="credit-amount">
+              <div class="value refund">+18,000</div>
+              <div class="time">15 phút trước</div>
+            </div>
+          </div>
+
+          <div class="credit-item">
+            <div class="credit-info">
+              <div class="credit-icon add">+</div>
+              <div class="credit-user">
+                <h4>Văn Khoa</h4>
+                <p>Mua gói Signature - #ORD-2841</p>
+              </div>
+            </div>
+            <div class="credit-amount">
+              <div class="value add">+10,000</div>
+              <div class="time">28 phút trước</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Codes Page -->
+      <div id="page-qrcode" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý QR Codes</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📤 Export</button>
+            <button class="btn btn-primary" onclick="openModal('newQR')">+ Tạo QR mới</button>
+          </div>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(90, 107, 255, 0.2);">📱</div>
+            </div>
+            <div class="stat-value">25</div>
+            <div class="stat-label">Tổng bàn</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2);">✓</div>
+            </div>
+            <div class="stat-value">18</div>
+            <div class="stat-label">Đang sử dụng</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2);">⏳</div>
+            </div>
+            <div class="stat-value">7</div>
+            <div class="stat-label">Trống</div>
+          </div>
+        </div>
+
+        <div class="qr-grid">
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B01</div>
+            <div class="qr-table">Bàn 01</div>
+            <div class="qr-status">🟢 Đang sử dụng</div>
+          </div>
+
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B02</div>
+            <div class="qr-table">Bàn 02</div>
+            <div class="qr-status">🟢 Đang sử dụng</div>
+          </div>
+
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B03</div>
+            <div class="qr-table">Bàn 03</div>
+            <div class="qr-status">🟡 Trống</div>
+          </div>
+
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B04</div>
+            <div class="qr-table">Bàn 04</div>
+            <div class="qr-status">🟢 Đang sử dụng</div>
+          </div>
+
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B05</div>
+            <div class="qr-table">Bàn 05</div>
+            <div class="qr-status">🟡 Trống</div>
+          </div>
+
+          <div class="qr-card">
+            <div class="qr-placeholder">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <rect x="10" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="65" y="10" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="10" y="65" width="25" height="25" rx="2" fill="#000"/>
+                <rect x="40" y="40" width="20" height="20" rx="2" fill="#000"/>
+                <rect x="65" y="65" width="8" height="8" fill="#000"/>
+              </svg>
+            </div>
+            <div class="qr-code">QR-B06</div>
+            <div class="qr-table">Bàn 06</div>
+            <div class="qr-status">🟢 Đang sử dụng</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff Page -->
+      <div id="page-staff" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý nhân viên</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('newStaff')">+ Thêm nhân viên</button>
+          </div>
+        </div>
+
+        <div class="staff-grid">
+          <div class="staff-card">
+            <div class="staff-avatar">AN</div>
+            <div class="staff-info">
+              <h3 class="staff-name">Nguyễn An</h3>
+              <p class="staff-role">Quản lý</p>
+              <div class="staff-stats">
+                <span class="staff-stat">📋 124 đơn</span>
+                <span class="staff-stat">⭐ 4.9</span>
+              </div>
+            </div>
+            <div class="action-btns" style="flex-direction: column;">
+              <button class="action-btn-sm edit">✏️</button>
+              <button class="action-btn-sm delete">✕</button>
+            </div>
+          </div>
+
+          <div class="staff-card">
+            <div class="staff-avatar">BT</div>
+            <div class="staff-info">
+              <h3 class="staff-name">Trần Bình</h3>
+              <p class="staff-role">Barista</p>
+              <div class="staff-stats">
+                <span class="staff-stat">📋 89 đơn</span>
+                <span class="staff-stat">⭐ 4.7</span>
+              </div>
+            </div>
+            <div class="action-btns" style="flex-direction: column;">
+              <button class="action-btn-sm edit">✏️</button>
+              <button class="action-btn-sm delete">✕</button>
+            </div>
+          </div>
+
+          <div class="staff-card">
+            <div class="staff-avatar">CM</div>
+            <div class="staff-info">
+              <h3 class="staff-name">Lê Chi</h3>
+              <p class="staff-role">Thu ngân</p>
+              <div class="staff-stats">
+                <span class="staff-stat">📋 156 đơn</span>
+                <span class="staff-stat">⭐ 4.8</span>
+              </div>
+            </div>
+            <div class="action-btns" style="flex-direction: column;">
+              <button class="action-btn-sm edit">✏️</button>
+              <button class="action-btn-sm delete">✕</button>
+            </div>
+          </div>
+
+          <div class="staff-card">
+            <div class="staff-avatar">DH</div>
+            <div class="staff-info">
+              <h3 class="staff-name">Phạm Đức</h3>
+              <p class="staff-role">Barista</p>
+              <div class="staff-stats">
+                <span class="staff-stat">📋 67 đơn</span>
+                <span class="staff-stat">⭐ 4.6</span>
+              </div>
+            </div>
+            <div class="action-btns" style="flex-direction: column;">
+              <button class="action-btn-sm edit">✏️</button>
+              <button class="action-btn-sm delete">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Promotion Page -->
+      <div id="page-promotion" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Khuyến mãi</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('newPromo')">+ Tạo khuyến mãi</button>
+          </div>
+        </div>
+
+        <div class="promo-grid">
+          <div class="promo-card">
+            <div class="promo-header">
+              <div class="promo-code">WELCOME2024</div>
+              <div class="promo-desc">Giảm 20% cho khách hàng mới</div>
+            </div>
+            <div class="promo-body">
+              <div class="promo-stat">
+                <span class="label">Loại</span>
+                <span class="value">% Giảm giá</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Giá trị</span>
+                <span class="value">20%</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Sử dụng</span>
+                <span class="value">156 / 500</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Hết hạn</span>
+                <span class="value">31/12/2024</span>
+              </div>
+            </div>
+            <div class="promo-footer">
+              <span class="status-badge active">● Đang hoạt động</span>
+              <div class="action-btns">
+                <button class="action-btn-sm edit">✏️</button>
+                <button class="action-btn-sm delete">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="promo-card">
+            <div class="promo-header" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));">
+              <div class="promo-code">SUMMER50K</div>
+              <div class="promo-desc">Giảm 50K cho đơn từ 200K</div>
+            </div>
+            <div class="promo-body">
+              <div class="promo-stat">
+                <span class="label">Loại</span>
+                <span class="value">Giảm tiền mặt</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Giá trị</span>
+                <span class="value">50,000đ</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Sử dụng</span>
+                <span class="value">89 / 200</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Hết hạn</span>
+                <span class="value">30/06/2024</span>
+              </div>
+            </div>
+            <div class="promo-footer">
+              <span class="status-badge active">● Đang hoạt động</span>
+              <div class="action-btns">
+                <button class="action-btn-sm edit">✏️</button>
+                <button class="action-btn-sm delete">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="promo-card">
+            <div class="promo-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));">
+              <div class="promo-code">LOYALTY10</div>
+              <div class="promo-desc">Tích điểm x2 cho khách thân thiết</div>
+            </div>
+            <div class="promo-body">
+              <div class="promo-stat">
+                <span class="label">Loại</span>
+                <span class="value">Tích điểm</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Giá trị</span>
+                <span class="value">x2 Points</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Sử dụng</span>
+                <span class="value">1,247</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">Hết hạn</span>
+                <span class="value">Không giới hạn</span>
+              </div>
+            </div>
+            <div class="promo-footer">
+              <span class="status-badge active">● Đang hoạt động</span>
+              <div class="action-btns">
+                <button class="action-btn-sm edit">✏️</button>
+                <button class="action-btn-sm delete">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Page -->
+      <div id="page-inventory" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý kho hàng</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📤 Export</button>
+            <button class="btn btn-primary" onclick="openModal('addStock')">+ Nhập kho</button>
+          </div>
+        </div>
+
+        <div class="inventory-grid">
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">☕ Cà phê Arabica</span>
+              <span class="inventory-stock high">Còn nhiều</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill high" style="width: 85%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 17kg</span>
+              <span>Tối thiểu: 5kg</span>
+            </div>
+          </div>
+
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">🥛 Sữa tươi</span>
+              <span class="inventory-stock low">Sắp hết</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill low" style="width: 25%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 2.5L</span>
+              <span>Tối thiểu: 5L</span>
+            </div>
+          </div>
+
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">🍯 Syrup các loại</span>
+              <span class="inventory-stock high">Còn nhiều</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill high" style="width: 70%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 14 chai</span>
+              <span>Tối thiểu: 5 chai</span>
+            </div>
+          </div>
+
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">🧊 Đá viên</span>
+              <span class="inventory-stock low">Sắp hết</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill low" style="width: 30%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 6kg</span>
+              <span>Tối thiểu: 10kg</span>
+            </div>
+          </div>
+
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">🥤 Ly nhựa</span>
+              <span class="inventory-stock out">Hết hàng</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill out" style="width: 0%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 0 cái</span>
+              <span>Tối thiểu: 100 cái</span>
+            </div>
+          </div>
+
+          <div class="inventory-card">
+            <div class="inventory-header">
+              <span class="inventory-name">🍫 Chocolate</span>
+              <span class="inventory-stock high">Còn nhiều</span>
+            </div>
+            <div class="inventory-bar">
+              <div class="inventory-fill high" style="width: 90%;"></div>
+            </div>
+            <div class="inventory-stats">
+              <span>Hiện tại: 18 gói</span>
+              <span>Tối thiểu: 5 gói</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Page -->
+      <div id="page-analytics" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Báo cáo & Phân tích</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">📤 Export PDF</button>
+            <button class="btn btn-secondary">📊 Export Excel</button>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Doanh thu theo tháng</h3>
+              <select class="form-input" style="width: auto;">
+                <option>2024</option>
+                <option>2023</option>
+              </select>
+            </div>
+            <div class="chart-container">
+              <div class="chart-bars">
+                <div class="chart-bar" style="height: 45%;"><span class="chart-bar-value">12.5M</span><span class="chart-bar-label">T1</span></div>
+                <div class="chart-bar" style="height: 55%;"><span class="chart-bar-value">15.2M</span><span class="chart-bar-label">T2</span></div>
+                <div class="chart-bar" style="height: 50%;"><span class="chart-bar-value">14.8M</span><span class="chart-bar-label">T3</span></div>
+                <div class="chart-bar" style="height: 70%;"><span class="chart-bar-value">21.3M</span><span class="chart-bar-label">T4</span></div>
+                <div class="chart-bar" style="height: 65%;"><span class="chart-bar-value">19.5M</span><span class="chart-bar-label">T5</span></div>
+                <div class="chart-bar" style="height: 80%;"><span class="chart-bar-value">25.2M</span><span class="chart-bar-label">T6</span></div>
+                <div class="chart-bar" style="height: 90%;"><span class="chart-bar-value">28.5M</span><span class="chart-bar-label">T7</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Top sản phẩm</h3>
+            </div>
+            <div style="padding: 20px;">
+              <div class="promo-stat">
+                <span class="label">1. Latte</span>
+                <span class="value" style="color: var(--primary);">35%</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">2. Signature</span>
+                <span class="value" style="color: var(--warning);">28%</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">3. Premium</span>
+                <span class="value" style="color: var(--pink);">22%</span>
+              </div>
+              <div class="promo-stat">
+                <span class="label">4. Espresso</span>
+                <span class="value" style="color: var(--text-secondary);">15%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card" style="margin-top: 24px;">
+          <div class="table-header">
+            <h3 class="table-title">Báo cáo chi tiết theo ngày</h3>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Đơn hàng</th>
+                <th>Doanh thu</th>
+                <th>Credits bán</th>
+                <th>Credits dùng</th>
+                <th>Khách hàng mới</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>15/07/2024</td>
+                <td>156</td>
+                <td>4,520,000đ</td>
+                <td>156,000</td>
+                <td>98,500</td>
+                <td>12</td>
+              </tr>
+              <tr>
+                <td>14/07/2024</td>
+                <td>142</td>
+                <td>4,180,000đ</td>
+                <td>142,000</td>
+                <td>89,200</td>
+                <td>8</td>
+              </tr>
+              <tr>
+                <td>13/07/2024</td>
+                <td>168</td>
+                <td>5,120,000đ</td>
+                <td>168,000</td>
+                <td>112,300</td>
+                <td>15</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="page-settings" class="page-view">
+        <div class="page-header">
+          <h1 class="page-title">Cài đặt</h1>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3 class="settings-title">🏪 Cửa hàng</h3>
+            <p class="settings-desc">Thông tin cơ bản của quán</p>
+          </div>
+          <div class="settings-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tên cửa hàng</label>
+                <input type="text" class="form-input" value="AI Café">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="text" class="form-input" value="0901 234 567">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Địa chỉ</label>
+              <input type="text" class="form-input" value="123 Nguyễn Trãi, Quận 1, TP.HCM">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3 class="settings-title">🤖 Cài đặt AI</h3>
+            <p class="settings-desc">Quản lý các API và cấu hình AI</p>
+          </div>
+          <div class="settings-body">
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>OpenAI API</h4>
+                <p>Kết nối ChatGPT, DALL-E</p>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Anthropic Claude</h4>
+                <p>API cho Claude AI</p>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Stability AI</h4>
+                <p>Tạo ảnh từ AI</p>
+              </div>
+              <div class="toggle" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Rate Limiting</h4>
+                <p>Giới hạn request cho mỗi gói</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" class="form-input" value="100" style="width: 80px; text-align: center;">
+                <span style="color: var(--text-secondary);">req/min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-header">
+            <h3 class="settings-title">🔔 Thông báo</h3>
+            <p class="settings-desc">Cài đặt thông báo cho admin</p>
+          </div>
+          <div class="settings-body">
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Thông báo đơn hàng mới</h4>
+                <p>Gửi notification khi có đơn hàng mới</p>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Cảnh báo kho hàng</h4>
+                <p>Thông báo khi nguyên liệu sắp hết</p>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <h4>Báo cáo hàng ngày</h4>
+                <p>Gửi email tổng kết mỗi ngày</p>
+              </div>
+              <div class="toggle" onclick="this.classList.toggle('active')"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button class="btn btn-secondary">Hủy thay đổi</button>
+          <button class="btn btn-primary">Lưu cài đặt</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Tạo đơn hàng mới</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Khách hàng</label>
+          <input type="text" class="form-input" placeholder="Tìm kiếm khách hàng...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sản phẩm</label>
+          <select class="form-input">
+            <option>Chọn sản phẩm...</option>
+            <option>☕ Espresso - 30,000đ</option>
+            <option>🥛 Latte - 50,000đ</option>
+            <option>⭐ Signature - 80,000đ</option>
+            <option>👑 Premium - 120,000đ</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Bàn</label>
+            <select class="form-input">
+              <option>Chọn bàn...</option>
+              <option>Bàn 01</option>
+              <option>Bàn 02</option>
+              <option>Bàn 03</option>
+              <option>Bàn 04</option>
+              <option>Bàn 05</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Số lượng</label>
+            <input type="number" class="form-input" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ghi chú</label>
+          <textarea class="form-input" rows="3" placeholder="Ghi chú đơn hàng..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+        <button class="btn btn-primary">Tạo đơn</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Page Navigation
+    function showPage(pageId) {
+      // Hide all pages
+      document.querySelectorAll('.page-view').forEach(page => {
+        page.classList.remove('active');
+      });
+
+      // Remove active from nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Show selected page
+      document.getElementById('page-' + pageId).classList.add('active');
+
+      // Activate nav item
+      const navItem = document.querySelector(`.nav-item.${pageId}`);
+      if (navItem) navItem.classList.add('active');
+    }
+
+    // Modal
+    function openModal(type) {
+      const modal = document.getElementById('modal');
+      const title = document.getElementById('modalTitle');
+
+      switch(type) {
+        case 'newOrder':
+          title.textContent = 'Tạo đơn hàng mới';
+          break;
+        case 'newUser':
+          title.textContent = 'Thêm người dùng';
+          break;
+        case 'newProduct':
+          title.textContent = 'Thêm sản phẩm';
+          break;
+        case 'topupCredits':
+          title.textContent = 'Nạp Credits';
+          break;
+        case 'newQR':
+          title.textContent = 'Tạo QR Code mới';
+          break;
+        case 'newStaff':
+          title.textContent = 'Thêm nhân viên';
+          break;
+        case 'newPromo':
+          title.textContent = 'Tạo khuyến mãi';
+          break;
+        case 'addStock':
+          title.textContent = 'Nhập kho';
+          break;
+      }
+
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Tab functionality
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        this.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toastText');
+      toastText.textContent = message;
+      toast.style.background = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--warning)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Add toast to page
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span class="toast-text" id="toastText">Thành công!</span>
+      </div>
+    `);
+
+    // Add toast styles
+    const toastStyle = document.createElement('style');
+    toastStyle.textContent = `
+      .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--success);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        z-index: 10000;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .toast-icon {
+        width: 24px;
+        height: 24px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    `;
+    document.head.appendChild(toastStyle);
+
+    // Order actions
+    document.querySelectorAll('.action-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const action = this.textContent.trim();
+        const orderRow = this.closest('tr');
+        const orderId = orderRow.querySelector('.order-id').textContent;
+        if (action.includes('Duyệt')) {
+          showToast(`Đã duyệt đơn ${orderId}`);
+        } else if (action.includes('Xem')) {
+          showToast(`Đang xem đơn ${orderId}`);
+        }
+      });
+    });
+
+    // Add more menu item clicks
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const name = this.querySelector('span').textContent;
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        showToast('Đã chọn: ' + name);
+      });
+    });
+
+    // Product row clicks
+    document.querySelectorAll('.product-row, .user-row, .order-row').forEach(row => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', function() {
+        this.style.background = 'var(--bg-card-hover)';
+        setTimeout(() => this.style.background = '', 200);
+      });
+    });
+
+    // Search functionality
+    const searchInputs = document.querySelectorAll('.search-box input');
+    searchInputs.forEach(input => {
+      input.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const table = this.closest('.search-box').nextElementSibling;
+        if (table && table.tagName === 'TABLE') {
+          table.querySelectorAll('tr').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+          });
+        }
+      });
+    });
+
+    // ==================== FULL FEATURE SYSTEM ====================
+
+    // Dashboard Data
+    let dashboardStats = {
+      todayRevenue: 2850000,
+      todayOrders: 47,
+      activeUsers: 23,
+      pendingOrders: 5
+    };
+
+    // Orders Data
+    let ordersData = [
+      { id: 'ORD-2847', customer: 'Thu Hà', items: ['Latte x1', 'Signature x2'], total: 210000, status: 'pending', time: '2 phút', table: 'Bàn 05' },
+      { id: 'ORD-2846', customer: 'Minh Đức', items: ['Premium x1'], total: 120000, status: 'cooking', time: '8 phút', table: 'Bàn 12' },
+      { id: 'ORD-2845', customer: 'Online', items: ['Latte x1'], total: 50000, status: 'ready', time: '12 phút', table: 'Online' },
+      { id: 'ORD-2844', customer: 'Thu Hà', items: ['Signature x1', 'Espresso x1'], total: 110000, status: 'done', time: '1 giờ', table: 'Bàn 03' },
+    ];
+
+    // Users Data
+    let usersData = [
+      { id: 'USR-001', name: 'Thu Hà', email: 'thuha@email.com', tier: 'Signature', credits: 12500, orders: 24 },
+      { id: 'USR-002', name: 'Minh Đức', email: 'minhduc@email.com', tier: 'Premium', credits: 18200, orders: 18 },
+      { id: 'USR-003', name: 'Lan Anh', email: 'lananh@email.com', tier: 'Latte', credits: 5200, orders: 8 },
+    ];
+
+    // Products Data
+    let productsData = [
+      { id: 'PRD-001', name: 'Espresso', price: 30000, credits: 2000, status: 'active', sold: 156 },
+      { id: 'PRD-002', name: 'Latte', price: 50000, credits: 5000, status: 'active', sold: 203 },
+      { id: 'PRD-003', name: 'Signature', price: 80000, credits: 10000, status: 'active', sold: 89 },
+      { id: 'PRD-004', name: 'Premium', price: 120000, credits: 18000, status: 'active', sold: 45 },
+    ];
+
+    // Credits Data
+    let creditsData = [
+      { id: 'CRD-001', user: 'Thu Hà', amount: 50000, credits: 5000, method: 'VNPay', status: 'success', time: '10 phút' },
+      { id: 'CRD-002', user: 'Minh Đức', amount: 100000, credits: 11000, method: 'MoMo', status: 'success', time: '25 phút' },
+      { id: 'CRD-003', user: 'Lan Anh', amount: 200000, credits: 24000, method: 'VNPay', status: 'pending', time: '1 giờ' },
+    ];
+
+    // QR Codes Data
+    let qrData = [
+      { id: 'QR-001', code: 'TABLE-01', table: 'Bàn 01', status: 'active', scans: 12, revenue: 320000 },
+      { id: 'QR-002', code: 'TABLE-05', table: 'Bàn 05', status: 'active', scans: 8, revenue: 180000 },
+      { id: 'QR-003', code: 'TABLE-12', table: 'Bàn 12', status: 'inactive', scans: 3, revenue: 95000 },
+    ];
+
+    // Staff Data
+    let staffData = [
+      { id: 'STF-001', name: 'Nguyễn Văn A', role: 'Quản lý', status: 'online', orders: 24 },
+      { id: 'STF-002', name: 'Trần Thị B', role: 'Phục vụ', status: 'online', orders: 18 },
+      { id: 'STF-003', name: 'Lê Văn C', role: 'Pha chế', status: 'busy', orders: 12 },
+    ];
+
+    // Promotions Data
+    let promosData = [
+      { id: 'PROMO-001', name: 'Giảm 20% Premium', type: 'discount', value: '20%', status: 'active', used: 45 },
+      { id: 'PROMO-002', name: 'Tặng 2K Credits', type: 'bonus', value: '+2K', status: 'active', used: 128 },
+    ];
+
+    // Inventory Data
+    let inventoryData = [
+      { id: 'INV-001', name: 'Cà phê Arabica', stock: 45, unit: 'kg', status: 'good' },
+      { id: 'INV-002', name: 'Sữa tươi', stock: 12, unit: 'lít', status: 'low' },
+      { id: 'INV-003', name: 'Ly giấy', stock: 500, unit: 'cái', status: 'good' },
+    ];
+
+    // ==================== TOAST ====================
+    function showToast(message, type = 'success') {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        document.body.insertAdjacentHTML('beforeend', '<div class="toast" id="toast"><span class="toast-icon">✓</span><span class="toast-text"></span></div>');
+        toast = document.getElementById('toast');
+      }
+      const toastText = toast.querySelector('.toast-text');
+      toastText.textContent = message;
+      toast.style.background = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--warning)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // ==================== ORDER ACTIONS ====================
+    function approveOrder(id) {
+      const order = ordersData.find(o => o.id === id);
+      if (order) {
+        order.status = 'cooking';
+        showToast(`Đã duyệt đơn ${id}`);
+        updateDashboard();
+      }
+    }
+
+    function completeOrder(id) {
+      const order = ordersData.find(o => o.id === id);
+      if (order) {
+        order.status = 'done';
+        dashboardStats.todayOrders++;
+        dashboardStats.todayRevenue += order.total;
+        showToast(`Đơn ${id} đã hoàn thành`);
+        updateDashboard();
+      }
+    }
+
+    function updateDashboard() {
+      const revenueEl = document.querySelector('.stat-card:nth-child(1) .stat-value');
+      const ordersEl = document.querySelector('.stat-card:nth-child(2) .stat-value');
+      if (revenueEl) revenueEl.textContent = (dashboardStats.todayRevenue / 1000000).toFixed(1) + 'M';
+      if (ordersEl) ordersEl.textContent = dashboardStats.todayOrders;
+    }
+
+    // ==================== USER ACTIONS ====================
+    function viewUser(id) {
+      const user = usersData.find(u => u.id === id);
+      if (user) showToast(`Xem thông tin: ${user.name}`);
+    }
+
+    function topupUser(id) {
+      const user = usersData.find(u => u.id === id);
+      if (user) {
+        user.credits += 5000;
+        showToast(`Đã nạp 5,000 credits cho ${user.name}`);
+      }
+    }
+
+    // ==================== PRODUCT ACTIONS ====================
+    function toggleProductStatus(id) {
+      const product = productsData.find(p => p.id === id);
+      if (product) {
+        product.status = product.status === 'active' ? 'inactive' : 'active';
+        showToast(`${product.name} đã ${product.status === 'active' ? 'kích hoạt' : 'tắt'}`);
+      }
+    }
+
+    // ==================== QR ACTIONS ====================
+    function generateQR() {
+      const newQR = {
+        id: 'QR-00' + (qrData.length + 1),
+        code: 'TABLE-' + String(qrData.length + 1).padStart(2, '0'),
+        table: 'Bàn ' + (qrData.length + 1),
+        status: 'active',
+        scans: 0,
+        revenue: 0
+      };
+      qrData.push(newQR);
+      showToast(`Đã tạo QR cho ${newQR.table}`);
+    }
+
+    // ==================== STAFF ACTIONS ====================
+    function toggleStaffStatus(id) {
+      const staff = staffData.find(s => s.id === id);
+      if (staff) {
+        staff.status = staff.status === 'online' ? 'offline' : 'online';
+        showToast(`${staff.name}: ${staff.status === 'online' ? 'Đang online' : 'Offline'}`);
+      }
+    }
+
+    // ==================== PROMO ACTIONS ====================
+    function togglePromoStatus(id) {
+      const promo = promosData.find(p => p.id === id);
+      if (promo) {
+        promo.status = promo.status === 'active' ? 'inactive' : 'active';
+        showToast(`Khuyến mãi "${promo.name}" đã ${promo.status === 'active' ? 'kích hoạt' : 'tắt'}`);
+      }
+    }
+
+    // ==================== INVENTORY ACTIONS ====================
+    function addInventory(id) {
+      const item = inventoryData.find(i => i.id === id);
+      if (item) {
+        item.stock += 10;
+        showToast(`Đã nhập thêm ${item.name}`);
+      }
+    }
+
+    // ==================== MODAL HANDLERS ====================
+    document.querySelectorAll('.btn-primary, .btn-success, .btn-secondary').forEach(btn => {
+      if (!btn.onclick) {
+        btn.addEventListener('click', function() {
+          const text = this.textContent.trim();
+          if (text.includes('Tạo đơn') || text.includes('Thêm') || text.includes('Tạo')) {
+            showToast('Đã ' + (text.includes('Tạo') ? 'tạo' : 'thêm') + ' thành công!');
+          }
+        });
+      }
+    });
+
+    // Add click handlers to all action buttons
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const text = this.textContent.trim();
+        if (text.includes('Duyệt')) {
+          const row = this.closest('tr') || this.closest('.order-card');
+          const idEl = row?.querySelector('.order-id, .order-id-cell');
+          if (idEl) approveOrder(idEl.textContent.trim());
+        }
+        if (text.includes('Hoàn thành') || text.includes('Xong')) {
+          const row = this.closest('tr') || this.closest('.order-card');
+          const idEl = row?.querySelector('.order-id, .order-id-cell');
+          if (idEl) completeOrder(idEl.textContent.trim());
+        }
+      });
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const filter = this.textContent.toLowerCase();
+        if (filter.includes('tất cả') || filter.includes('all')) {
+          showToast('Hiển thị tất cả');
+        } else if (filter.includes('chờ')) {
+          showToast('Lọc: Chờ duyệt');
+        } else if (filter.includes('đang')) {
+          showToast('Lọc: Đang xử lý');
+        } else if (filter.includes('xong')) {
+          showToast('Lọc: Hoàn thành');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

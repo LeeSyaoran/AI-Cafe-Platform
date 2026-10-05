@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -17,11 +18,25 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	// Load config
 	cfg := config.Load()
+
+	// Create database pool for direct queries
+	dbPool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to create database pool: %v", err)
+	}
+	defer dbPool.Close()
+
+	// Test connection
+	if err := dbPool.Ping(context.Background()); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
+	log.Println("Connected to database")
 
 	// Init repository
 	repo := repository.NewPostgresRepo(cfg.DatabaseURL)
@@ -29,12 +44,12 @@ func main() {
 
 	// Init services
 	authService := service.NewAuthService(repo, cfg.JWT)
-	productService := service.NewProductService(repo)
+	_ = service.NewProductService(repo) // Initialize if needed
 	creditService := service.NewCreditService(repo)
 
 	// Init handlers
-	authHandler := handler.NewAuthHandler(authService)
-	productHandler := handler.NewProductHandler(productService)
+	authHandler := handler.NewAuthHandler(repo, cfg.JWT)
+	productHandler := handler.NewProductHandler(dbPool)
 	orderHandler := handler.NewOrderHandler(repo)
 	cartHandler := handler.NewCartHandler(repo)
 	aiHandler := handler.NewAIHandler(creditService)
@@ -63,6 +78,12 @@ func main() {
 	// Rate limiter
 	app.Use(middleware.RateLimiterMiddleware(cfg.RateLimit))
 
+	// Database middleware - attach db pool to all requests
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("db", dbPool)
+		return c.Next()
+	})
+
 	// Health check
 	app.Get("/health", handler.HealthCheck)
 
@@ -76,20 +97,19 @@ func main() {
 	// ==================== PUBLIC ROUTES ====================
 	v1 := app.Group("/v1")
 
-	// Auth routes
+	// Auth routes (OTP-based)
 	auth := v1.Group("/auth")
-	auth.Post("/register", authHandler.Register)
-	auth.Post("/login", authHandler.Login)
+	auth.Post("/send-otp", authHandler.SendOTP)
+	auth.Post("/verify-otp", authHandler.VerifyOTP)
 	auth.Post("/refresh", authHandler.RefreshToken)
 
-	// Cafes
+	// Menu / Products (public)
+	v1.Get("/menu", handler.GetMenu)
 	v1.Get("/cafes", handler.ListCafes)
 	v1.Get("/cafes/:id", handler.GetCafe)
-
-	// Categories
 	v1.Get("/categories", handler.ListCategories)
+	v1.Get("/categories/:id", handler.GetCategory)
 
-	// Products (public with company filter)
 	products := v1.Group("/products")
 	products.Get("/", productHandler.ListProducts)
 	products.Get("/featured", productHandler.GetFeaturedProducts)
@@ -120,9 +140,9 @@ func main() {
 	orders.Get("/:id", orderHandler.GetOrder)
 	orders.Put("/:id/cancel", orderHandler.CancelOrder)
 
-	// Credits
-	credits := protected.Group("/credits")
-	credits.Get("/balance", handler.GetCreditBalance)
+	// Wallet & Credits
+	protected.Get("/wallet", handler.GetWallet)
+	protected.Get("/credits/balance", handler.GetCreditBalance)
 
 	// ==================== ADMIN ROUTES ====================
 	admin := protected.Group("/admin")
@@ -137,6 +157,11 @@ func main() {
 	adminCategories.Post("/", handler.CreateCategory)
 	adminCategories.Put("/:id", handler.UpdateCategory)
 	adminCategories.Delete("/:id", handler.DeleteCategory)
+
+	adminCafes := admin.Group("/cafes")
+	adminCafes.Post("/", handler.CreateCafe)
+	adminCafes.Put("/:id", handler.UpdateCafe)
+	adminCafes.Delete("/:id", handler.DeleteCafe)
 
 	// Start server
 	go func() {

@@ -163,9 +163,26 @@ func (s *AuthService) ValidateToken(tokenString string) (*config.JWTClaims, erro
 		return nil, errors.New("invalid claims")
 	}
 
+	// Extract claims - handle both possible key names
+	var userID, email, role string
+
+	// userId could be in "userId" or "sub" depending on how token was created
+	if uid, ok := claims["userId"].(string); ok {
+		userID = uid
+	} else if uid, ok := claims["sub"].(string); ok {
+		userID = uid
+	}
+
+	if e, ok := claims["email"].(string); ok {
+		email = e
+	}
+	if r, ok := claims["role"].(string); ok {
+		role = r
+	}
+
 	return &config.JWTClaims{
-		UserID: claims["sub"].(string),
-		Email:  claims["email"].(string),
-		Role:   claims["role"].(string),
+		UserID: userID,
+		Email:  email,
+		Role:   role,
 	}, nil
 }

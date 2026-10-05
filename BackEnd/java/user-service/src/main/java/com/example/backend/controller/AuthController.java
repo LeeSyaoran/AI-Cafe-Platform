@@ -78,7 +78,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Logged out successfully")));
     }
 
-    private UserResponse toUserResponse(var user) {
+    private UserResponse toUserResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())

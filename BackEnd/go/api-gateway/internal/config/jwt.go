@@ -1,22 +1,29 @@
 package config
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type JWTClaims struct {
 	UserID string `json:"userId"`
 	Email  string `json:"email"`
 	Role   string `json:"role"`
+	Tier   string `json:"tier,omitempty"`
+	jwt.RegisteredClaims
 }
 
-type JWTConfig struct {
-	Secret                  string
-	AccessTokenExpiration  int64
-	RefreshTokenExpiration int64
-	Issuer                 string
-}
-
-func (c *JWTConfig) GetSigningKey() []byte {
-	return []byte(c.Secret)
+func NewJWTClaims(userID, email, role string) *JWTClaims {
+	return &JWTClaims{
+		UserID: userID,
+		Email:  email,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
 }
 
 type CustomClaims struct {

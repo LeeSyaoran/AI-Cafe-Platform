@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,6 +35,21 @@ func NewPostgresRepo(databaseURL string) *PostgresRepo {
 
 func (r *PostgresRepo) Close() {
 	r.pool.Close()
+}
+
+// User struct for auth
+type User struct {
+	ID           string
+	Email        string
+	PasswordHash string
+	Phone        string
+	Role         string
+	Tier         string
+	Name         string
+	Status       string
+	CompanyID    string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // User operations
@@ -76,6 +92,130 @@ func (r *PostgresRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*model.Us
 		return nil, nil
 	}
 	return &user, err
+}
+
+// GetUserByPhone returns user by phone number
+func (r *PostgresRepo) GetUserByPhone(ctx context.Context, phone string) (*User, error) {
+	query := `
+		SELECT id, COALESCE(full_name, ''), email, phone, COALESCE(role, 'customer'), status, COALESCE(tier, 'bronze'), COALESCE(company_id::text, ''), created_at, updated_at
+		FROM users
+		WHERE phone = $1
+	`
+	var user User
+	err := r.pool.QueryRow(ctx, query, phone).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Role, &user.Status, &user.Tier, &user.CompanyID, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindOrCreateUserByPhone finds existing user or creates new one
+func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string) (*User, error) {
+	log.Printf("[DEBUG] FindOrCreateUserByPhone called for phone: %s", phone)
+
+	// Try to find existing user
+	user, err := r.GetUserByPhone(ctx, phone)
+	if err != nil {
+		log.Printf("[ERROR] GetUserByPhone failed for %s: %v", phone, err)
+		return nil, err
+	}
+	log.Printf("[DEBUG] GetUserByPhone result: %+v", user)
+
+	if user != nil {
+		log.Printf("[DEBUG] User found, returning existing user")
+		return user, nil
+	}
+
+	log.Printf("[DEBUG] User not found, creating new user")
+
+	// Get default company
+	var companyID string
+	err = r.pool.QueryRow(ctx, `SELECT id FROM companies LIMIT 1`).Scan(&companyID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get company: %v", err)
+		return nil, fmt.Errorf("no company found: %w", err)
+	}
+
+	// Create new user with password_hash = 'otp_auth'
+	newID := uuid.New().String()
+	insertQuery := `
+		INSERT INTO users (id, phone, email, role, status, tier, company_id, password_hash, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, 'active', 'bronze', $5, 'otp_auth', NOW(), NOW())
+		ON CONFLICT (phone) DO UPDATE SET updated_at = NOW()
+		RETURNING id
+	`
+	log.Printf("[DEBUG] Inserting user with ID: %s", newID)
+	err = r.pool.QueryRow(ctx, insertQuery, newID, phone, phone+"@temp.aicafe.vn", "customer", companyID).Scan(&newID)
+	if err != nil {
+		log.Printf("[ERROR] Insert user failed: %v", err)
+		return nil, fmt.Errorf("insert user failed: %w", err)
+	}
+
+	log.Printf("[DEBUG] User created with ID: %s", newID)
+
+	// Fetch the created user
+	user, err = r.GetUserByPhone(ctx, phone)
+	if err != nil {
+		log.Printf("[ERROR] GetUserByPhone after insert failed: %v", err)
+		return nil, err
+	}
+	log.Printf("[DEBUG] Final user: %+v", user)
+
+	return user, nil
+}
+
+// UpdateUser updates user profile
+func (r *PostgresRepo) UpdateUser(ctx context.Context, userID, name, email string) error {
+	// Update users table
+	if email != "" {
+		query := `UPDATE users SET email = $1, updated_at = NOW() WHERE id = $2`
+		_, err := r.pool.Exec(ctx, query, email, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update user name in users table
+	if name != "" {
+		query := `UPDATE users SET full_name = $1, updated_at = NOW() WHERE id = $2`
+		_, err := r.pool.Exec(ctx, query, name, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// GetUserByIDString returns user by ID string
+func (r *PostgresRepo) GetUserByIDString(ctx context.Context, userID string) (*User, error) {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `
+		SELECT id, COALESCE(full_name, ''), email, phone, COALESCE(role, 'customer'), status
+		FROM users
+		WHERE id = $1
+	`
+	var user User
+	err = r.pool.QueryRow(ctx, query, id).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Role, &user.Status,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	user.Tier = "BASIC"
+	return &user, nil
 }
 
 // Company operations

@@ -5,9 +5,10 @@ WORKDIR /app
 
 RUN apk add --no-cache git ca-certificates
 
-# Copy and build in one step
+# Copy and build
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api-gateway ./cmd/server
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api-gateway ./cmd/server
 
 # Runtime stage
 FROM alpine:3.19

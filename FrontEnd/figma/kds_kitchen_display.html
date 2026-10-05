@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Café - Kitchen Display System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5A6BFF;
+      --bg-dark: #0B0F19;
+      --bg-card: #1E293B;
+      --bg-card-hover: #283548;
+      --border: #334155;
+      --text: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --error: #EF4444;
+      --urgent: #EF4444;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* KDS Header */
+    .kds-header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .kds-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .kds-logo h1 {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .kds-logo span { color: var(--primary); }
+
+    .kds-status {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border-radius: 12px;
+    }
+
+    .status-count {
+      font-size: 24px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .status-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .status-item.pending .status-count { color: var(--warning); }
+    .status-item.cooking .status-count { color: var(--primary); }
+    .status-item.ready .status-count { color: var(--success); }
+
+    .kds-clock {
+      text-align: right;
+    }
+
+    .kds-time {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .kds-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-btn:hover { border-color: var(--primary); color: var(--text); }
+    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    .filter-count {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    /* KDS Grid */
+    .kds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 20px 24px;
+    }
+
+    /* Order Ticket */
+    .order-ticket {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-ticket:hover {
+      border-color: var(--primary);
+      transform: scale(1.02);
+    }
+
+    .order-ticket.urgent {
+      border-color: var(--urgent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2); }
+    }
+
+    .ticket-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .ticket-id {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--primary);
+    }
+
+    .ticket-meta {
+      text-align: right;
+    }
+
+    .ticket-time {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .ticket-table {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ticket-body {
+      padding: 16px;
+    }
+
+    .ticket-items {
+      margin-bottom: 16px;
+    }
+
+    .ticket-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ticket-item:last-child { border-bottom: none; }
+
+    .item-qty {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .item-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .item-icon.espresso { background: rgba(100, 116, 139, 0.2); }
+    .item-icon.latte { background: rgba(90, 107, 255, 0.2); }
+    .item-icon.signature { background: rgba(245, 158, 11, 0.2); }
+    .item-icon.premium { background: rgba(236, 72, 153, 0.2); }
+
+    .item-details { flex: 1; }
+
+    .item-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .item-tier {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .item-credits {
+      font-size: 14px;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .ticket-note {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--warning);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .note-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--warning);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .note-text {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .ticket-footer {
+      padding: 12px 16px;
+      background: var(--bg-dark);
+      display: flex;
+      gap: 8px;
+    }
+
+    .ticket-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .ticket-btn.accept {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .ticket-btn.complete {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .ticket-btn.cancel {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .ticket-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    .ticket-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Sound Alert */
+    .sound-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    /* Voice Command Indicator */
+    .voice-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      color: var(--text-secondary);
+    }
+
+    .voice-waves {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 16px;
+    }
+
+    .voice-wave {
+      width: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    .voice-wave:nth-child(1) { height: 6px; animation-delay: 0s; }
+    .voice-wave:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+    .voice-wave:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+    .voice-wave:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.5); }
+    }
+
+    /* Kitchen Timer */
+    .timer-display {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 12px 20px;
+      text-align: center;
+    }
+
+    .timer-value {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--success);
+    }
+
+    .timer-value.warning { color: var(--warning); }
+    .timer-value.danger { color: var(--error); }
+
+    .timer-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    /* Progress Ring */
+    .progress-ring {
+      width: 60px;
+      height: 60px;
+      position: relative;
+    }
+
+    .progress-ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .progress-ring circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .progress-ring .bg { stroke: var(--bg-dark); }
+
+    .progress-ring .progress {
+      stroke: var(--success);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 40px;
+      color: var(--text-secondary);
+    }
+
+    .empty-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-desc {
+      font-size: 14px;
+    }
+
+    /* Auto-print notification */
+    .print-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--primary);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideUp 0.3s ease;
+      z-index: 1000;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .print-notification .icon {
+      font-size: 24px;
+    }
+
+    .print-notification .text {
+      font-size: 14px;
+    }
+
+    .print-notification .order-num {
+      font-weight: 700;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <!-- KDS Header -->
+  <header class="kds-header">
+    <div class="kds-logo">
+      <h1>🍳 AI <span>Café</span> Kitchen</h1>
+    </div>
+
+    <div class="kds-status">
+      <div class="status-item pending">
+        <div>
+          <div class="status-count">5</div>
+          <div class="status-label">Chờ</div>
+        </div>
+      </div>
+      <div class="status-item cooking">
+        <div>
+          <div class="status-count">3</div>
+          <div class="status-label">Đang làm</div>
+        </div>
+      </div>
+      <div class="status-item ready">
+        <div>
+          <div class="status-count">8</div>
+          <div class="status-label">Sẵn sàng</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kds-controls">
+      <div class="sound-toggle">
+        🔔 <span style="font-size: 13px;">Âm thanh</span>
+      </div>
+      <div class="voice-indicator">
+        <div class="voice-waves">
+          <div class="voice-wave"></div>
+          <div class="voice-wave"></div>
+          <div class="voice-wave"></div>
+          <div class="voice-wave"></div>
+        </div>
+        <span style="font-size: 13px;">Voice</span>
+      </div>
+    </div>
+
+    <div class="kds-clock">
+      <div class="kds-time" id="clock">14:32</div>
+      <div class="kds-date">Thứ 2, 15/07/2024</div>
+    </div>
+  </header>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <button class="filter-btn active">📋 Tất cả <span class="filter-count">8</span></button>
+    <button class="filter-btn">⏳ Chờ xác nhận <span class="filter-count">5</span></button>
+    <button class="filter-btn">👨‍🍳 Đang pha chế <span class="filter-count">3</span></button>
+    <button class="filter-btn">✅ Sẵn sàng <span class="filter-count">8</span></button>
+    <button class="filter-btn">⚠️ Cần ưu tiên</button>
+  </div>
+
+  <!-- Order Grid -->
+  <div class="kds-grid">
+
+    <!-- Order 1 - Pending -->
+    <div class="order-ticket urgent">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-id">#2847</div>
+          <div class="ticket-table">🪑 Bàn 05</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time">⏱️ 8 phút</div>
+          <div class="ticket-table">👤 Trần Hùng</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon latte">🥛</div>
+            <div class="item-details">
+              <div class="item-name">Latte</div>
+              <div class="item-tier">Gói Latte • +5,000 Credits</div>
+            </div>
+            <div class="item-credits">5K</div>
+          </div>
+
+          <div class="ticket-item">
+            <div class="item-qty">2</div>
+            <div class="item-icon signature">⭐</div>
+            <div class="item-details">
+              <div class="item-name">Signature</div>
+              <div class="item-tier">Gói Signature • +10,000 Credits</div>
+            </div>
+            <div class="item-credits">20K</div>
+          </div>
+        </div>
+
+        <div class="ticket-note">
+          <div class="note-label">📝 Ghi chú</div>
+          <div class="note-text">Ít đường, thêm whipped cream</div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn cancel">✕ Hủy</button>
+        <button class="ticket-btn accept">✓ Nhận làm</button>
+      </div>
+    </div>
+
+    <!-- Order 2 - Pending -->
+    <div class="order-ticket">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-id">#2848</div>
+          <div class="ticket-table">🪑 Bàn 12</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time">⏱️ 5 phút</div>
+          <div class="ticket-table">👤 Mai Linh</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon premium">👑</div>
+            <div class="item-details">
+              <div class="item-name">Premium</div>
+              <div class="item-tier">Gói Premium • +18,000 Credits</div>
+            </div>
+            <div class="item-credits">18K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn cancel">✕ Hủy</button>
+        <button class="ticket-btn accept">✓ Nhận làm</button>
+      </div>
+    </div>
+
+    <!-- Order 3 - Cooking -->
+    <div class="order-ticket">
+      <div class="ticket-header" style="background: rgba(90, 107, 255, 0.1);">
+        <div>
+          <div class="ticket-id">#2845</div>
+          <div class="ticket-table">🪑 Bàn 03</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time" style="color: var(--warning);">⏱️ 12:45</div>
+          <div class="ticket-table">👤 Quang Nam</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon latte">🥛</div>
+            <div class="item-details">
+              <div class="item-name">Latte</div>
+              <div class="item-tier">Gói Latte</div>
+            </div>
+            <div class="item-credits">5K</div>
+          </div>
+
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon espresso">☕</div>
+            <div class="item-details">
+              <div class="item-name">Espresso</div>
+              <div class="item-tier">Gói Espresso</div>
+            </div>
+            <div class="item-credits">2K</div>
+          </div>
+        </div>
+
+        <div class="ticket-note">
+          <div class="note-label">📝 Ghi chú</div>
+          <div class="note-text">Khách dị ứng caffeine, làm decaf</div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn" style="background: var(--bg-dark); color: var(--text-secondary);">↩️ Trả lại</button>
+        <button class="ticket-btn complete">✅ Xong!</button>
+      </div>
+    </div>
+
+    <!-- Order 4 - Cooking -->
+    <div class="order-ticket">
+      <div class="ticket-header" style="background: rgba(90, 107, 255, 0.1);">
+        <div>
+          <div class="ticket-id">#2846</div>
+          <div class="ticket-table">🪑 Bàn 08</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time" style="color: var(--success);">⏱️ 08:20</div>
+          <div class="ticket-table">👤 Văn Khoa</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">3</div>
+            <div class="item-icon signature">⭐</div>
+            <div class="item-details">
+              <div class="item-name">Signature</div>
+              <div class="item-tier">Gói Signature (x3)</div>
+            </div>
+            <div class="item-credits">30K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn" style="background: var(--bg-dark); color: var(--text-secondary);">↩️ Trả lại</button>
+        <button class="ticket-btn complete">✅ Xong!</button>
+      </div>
+    </div>
+
+    <!-- Order 5 - Ready -->
+    <div class="order-ticket" style="border-color: var(--success); opacity: 0.8;">
+      <div class="ticket-header" style="background: rgba(16, 185, 129, 0.1);">
+        <div>
+          <div class="ticket-id" style="color: var(--success);">#2844</div>
+          <div class="ticket-table">🪑 Bàn 01</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time" style="color: var(--success);">✓ Đã xong</div>
+          <div class="ticket-table">👤 Thu Hà</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon latte">🥛</div>
+            <div class="item-details">
+              <div class="item-name">Latte</div>
+              <div class="item-tier">Gói Latte</div>
+            </div>
+            <div class="item-credits">5K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn complete" style="flex: 1;">📢 Gọi khách</button>
+      </div>
+    </div>
+
+    <!-- Order 6 - Pending -->
+    <div class="order-ticket">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-id">#2849</div>
+          <div class="ticket-table">🪑 Bàn 15</div>
+        </div>
+        <div class="ticket-meta">
+          <div class="ticket-time">⏱️ 3 phút</div>
+          <div class="ticket-table">👤 Online</div>
+        </div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-items">
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon espresso">☕</div>
+            <div class="item-details">
+              <div class="item-name">Espresso</div>
+              <div class="item-tier">Gói Espresso</div>
+            </div>
+            <div class="item-credits">2K</div>
+          </div>
+
+          <div class="ticket-item">
+            <div class="item-qty">1</div>
+            <div class="item-icon premium">👑</div>
+            <div class="item-details">
+              <div class="item-name">Premium</div>
+              <div class="item-tier">Gói Premium</div>
+            </div>
+            <div class="item-credits">18K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <button class="ticket-btn cancel">✕ Hủy</button>
+        <button class="ticket-btn accept">✓ Nhận làm</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Print Notification -->
+  <div class="print-notification">
+    <div class="icon">🖨️</div>
+    <div class="text">In đơn <span class="order-num">#2850</span> thành công</div>
+  </div>
+
+  <script>
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('clock').textContent = `${hours}:${minutes}`;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Filter functionality
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Sound toggle
+    document.querySelector('.sound-toggle').addEventListener('click', function() {
+      this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5';
+      showToast(this.style.opacity === '1' ? 'Đã bật âm thanh' : 'Đã tắt âm thanh');
+    });
+
+    // Voice toggle
+    document.querySelector('.voice-indicator').addEventListener('click', function() {
+      this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5';
+      const isOn = this.style.opacity === '1';
+      this.querySelector('span').textContent = isOn ? '🎤 Voice' : '🎤 Voice (Off)';
+      showToast(isOn ? 'Đã bật voice' : 'Đã tắt voice');
+    });
+
+    // ==================== FULL ORDER MANAGEMENT ====================
+    let orders = [
+      { id: 2845, table: 8, customer: 'Online', items: [{name: 'Espresso', qty: 1, icon: '☕', type: 'espresso'}], status: 'pending', time: 5, notes: 'Không đường' },
+      { id: 2846, table: 3, customer: 'Thu Hà', items: [{name: 'Latte', qty: 2, icon: '🥛', type: 'latte'}], status: 'cooking', time: 3, notes: '' },
+      { id: 2847, table: 12, customer: 'Minh', items: [{name: 'Signature', qty: 3, icon: '⭐', type: 'signature'}], status: 'pending', time: 7, notes: 'Ưu tiên' },
+      { id: 2848, table: 5, customer: 'Online', items: [{name: 'Premium', qty: 1, icon: '👑', type: 'premium'}], status: 'ready', time: 0, notes: '' },
+      { id: 2844, table: 1, customer: 'Thu Hà', items: [{name: 'Latte', qty: 1, icon: '🥛', type: 'latte'}], status: 'ready', time: 0, notes: '' },
+      { id: 2849, table: 15, customer: 'Online', items: [{name: 'Espresso', qty: 1, icon: '☕', type: 'espresso'}, {name: 'Premium', qty: 1, icon: '👑', type: 'premium'}], status: 'pending', time: 3, notes: '' },
+    ];
+
+    function showToast(message) {
+      const toastEl = document.createElement('div');
+      toastEl.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:1000;animation:fadeIn 0.3s;opacity:0;transition:opacity 0.3s;';
+      toastEl.textContent = message;
+      document.body.appendChild(toastEl);
+      setTimeout(() => toastEl.style.opacity = '1', 10);
+      setTimeout(() => {
+        toastEl.style.opacity = '0';
+        setTimeout(() => toastEl.remove(), 300);
+      }, 2500);
+    }
+
+    // Filter tabs
+    let currentFilter = 'all';
+    function filterOrders(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const container = document.getElementById('ordersContainer');
+      let filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
+
+      // Stats update
+      document.getElementById('statWaiting').textContent = orders.filter(o => o.status === 'pending').length;
+      document.getElementById('statCooking').textContent = orders.filter(o => o.status === 'cooking').length;
+      document.getElementById('statReady').textContent = orders.filter(o => o.status === 'ready').length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p style="font-size:20px;margin-bottom:8px;">📋</p><p>Không có đơn hàng</p></div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(order => {
+        const borderColor = order.status === 'pending' ? 'var(--warning)' : order.status === 'cooking' ? 'var(--primary)' : 'var(--success)';
+        const timeText = order.status === 'pending' ? `⏱️ ${order.time} phút` : order.status === 'cooking' ? `👨‍🍳 ${order.time} phút` : '✓ Sẵn sàng';
+        const itemsHtml = order.items.map(i => `
+          <div class="ticket-item">
+            <div class="item-qty">${i.qty}</div>
+            <div class="item-icon ${i.type}">${i.icon}</div>
+            <div class="item-details">
+              <div class="item-name">${i.name}</div>
+              <div class="item-tier">Gói ${i.name}</div>
+            </div>
+            <div class="item-credits">${i.qty * (i.type === 'espresso' ? 2 : i.type === 'latte' ? 5 : i.type === 'signature' ? 10 : 18)}K</div>
+          </div>
+        `).join('');
+
+        let buttons = '';
+        if (order.status === 'pending') {
+          buttons = `<button class="ticket-btn cancel" onclick="cancelOrder(${order.id})">✕ Hủy</button><button class="ticket-btn accept" onclick="acceptOrder(${order.id})">✓ Nhận làm</button>`;
+        } else if (order.status === 'cooking') {
+          buttons = `<button class="ticket-btn complete" onclick="completeOrder(${order.id})">✅ Xong!</button>`;
+        } else {
+          buttons = `<button class="ticket-btn" style="background:var(--success);flex:1;" onclick="callCustomer(${order.id})">📢 Gọi khách</button>`;
+        }
+
+        return `
+          <div class="order-ticket" style="border-color:${borderColor};${order.status==='pending' && order.time>5 ? 'animation:pulse 2s infinite;':''}">
+            <div class="ticket-header" style="background:${order.status==='pending' ? 'rgba(245,158,11,0.1)' : order.status==='cooking' ? 'rgba(90,107,255,0.1)' : 'rgba(16,185,129,0.1)'};">
+              <div>
+                <div class="ticket-id" style="color:${borderColor};">#${order.id}</div>
+                <div class="ticket-table">🪑 Bàn ${order.table}</div>
+              </div>
+              <div class="ticket-meta">
+                <div class="ticket-time" style="color:${borderColor};">${timeText}</div>
+                <div class="ticket-table">👤 ${order.customer}</div>
+              </div>
+            </div>
+            <div class="ticket-body">
+              ${order.notes ? `<div style="padding:8px 12px;background:rgba(239,68,68,0.1);border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--error);">📝 ${order.notes}</div>` : ''}
+              <div class="ticket-items">${itemsHtml}</div>
+            </div>
+            <div class="ticket-footer">${buttons}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function acceptOrder(id) {
+      const order = orders.find(o => o.id === id);
+      if (order) { order.status = 'cooking'; order.time = 0; showToast(`Đã nhận đơn #${id}`); renderOrders(); }
+    }
+
+    function cancelOrder(id) {
+      if (confirm(`Hủy đơn #${id}?`)) { orders = orders.filter(o => o.id !== id); showToast(`Đã hủy đơn #${id}`); renderOrders(); }
+    }
+
+    function completeOrder(id) {
+      const order = orders.find(o => o.id === id);
+      if (order) { order.status = 'ready'; showToast(`Đơn #${id} sẵn sàng!`); renderOrders(); }
+    }
+
+    function callCustomer(id) { showToast(`Đang gọi khách đơn #${id}...`); }
+
+    // Simulate time
+    setInterval(() => { orders.forEach(o => { if (o.status === 'pending' || o.status === 'cooking') o.time++; }); if (currentFilter === 'all') renderOrders(); }, 60000);
+
+    // Animations
+    const animStyle = document.createElement('style');
+    animStyle.textContent = `
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+      @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); } 50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); } }
+      @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    `;
+    document.head.appendChild(animStyle);
+
+    // Print notification
+    const printNotification = document.querySelector('.print-notification');
+    if (printNotification) { printNotification.style.animation = 'slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards'; }
+
+    renderOrders();
+  </script>
+</body>
+</html>
