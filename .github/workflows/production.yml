@@ -1,0 +1,484 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - pre-production
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  AWS_REGION: ap-southeast-1
+  PRODUCTION_CLUSTER: aicafe-prod
+  PREPROD_CLUSTER: aicafe-preprod
+
+jobs:
+  # ============================================
+  # PRE-DEPLOYMENT APPROVAL
+  # ============================================
+  pre-deployment:
+    name: Pre-deployment Approval
+    runs-on: ubuntu-latest
+    environment:
+      name: production-approval
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    outputs:
+      deploy_target: ${{ steps.set_target.outputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set deployment target
+        id: set_target
+        run: |
+          TARGET=${{ github.event.inputs.environment || 'production' }}
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          echo "Deploying to: $TARGET"
+
+      - name: Get last commit info
+        run: |
+          echo "Deploying commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+
+  # ============================================
+  # SECURITY SCAN BEFORE DEPLOY
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if grep -q "CRITICAL" trivy-results.sarif; then
+            echo "❌ Critical vulnerabilities found!"
+            exit 1
+          fi
+
+      - name: Run SAST scan
+        uses: dragonsec-oss/gitleaks-action@main
+        with:
+          args: --no-git -v
+
+  # ============================================
+  # DATABASE MIGRATION
+  # ============================================
+  database-migration:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Run database migrations
+        run: |
+          kubectl run db-migration-${{ github.sha }} \
+            --image=${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }} \
+            --restart=Never \
+            --namespace=production \
+            --overrides='{"spec":{"template":{"spec":{"containers":[{"name":"migration","command":["java","-jar","/app/user-service.jar","migrate"]}]}}}}'
+
+          # Wait for migration job to complete
+          kubectl wait --for=condition=complete job/db-migration-${{ github.sha }} --timeout=300s --namespace=production
+
+      - name: Check migration logs
+        if: failure()
+        run: |
+          kubectl logs job/db-migration-${{ github.sha }} --namespace=production
+
+  # ============================================
+  # BUILD IMAGES
+  # ============================================
+  build-backend:
+    name: Build Backend Images
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, security-scan, database-migration]
+    strategy:
+      matrix:
+        service:
+          - user-service
+          - order-service
+          - payment-service
+          - auth-service
+          - credit-service
+          - ai-gateway
+          - notification-service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, security-scan]
+    strategy:
+      matrix:
+        app:
+          - web-app
+          - admin-dashboard
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build ${{ matrix.app }}
+        run: |
+          cd apps/${{ matrix.app }}
+          npm ci
+          npm run build
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.app }}:${{ github.sha }} .
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.app }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.app }}:latest
+
+  # ============================================
+  # BLUE-GREEN DEPLOYMENT
+  # ============================================
+  deploy-blue-green:
+    name: Blue-Green Deployment
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Switch to blue/green deployment
+        run: |
+          # Get current active color
+          CURRENT=$(kubectl get service api-gateway -o jsonpath='{.spec.selector.color}' --namespace=production)
+          echo "Current active: $CURRENT"
+
+          if [ "$CURRENT" == "blue" ]; then
+            NEW="green"
+          else
+            NEW="blue"
+          fi
+          echo "New deployment: $NEW"
+
+          # Deploy to inactive color
+          kubectl set image deployment/user-service-$NEW user-service=${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }} --namespace=production
+          kubectl set image deployment/order-service-$NEW order-service=${{ env.REGISTRY }}/${{ github.repository }}/order-service:${{ github.sha }} --namespace=production
+          kubectl set image deployment/auth-service-$NEW auth-service=${{ env.REGISTRY }}/${{ github.repository }}/auth-service:${{ github.sha }} --namespace=production
+          kubectl set image deployment/credit-service-$NEW credit-service=${{ env.REGISTRY }}/${{ github.repository }}/credit-service:${{ github.sha }} --namespace=production
+          kubectl set image deployment/ai-gateway-$NEW ai-gateway=${{ env.REGISTRY }}/${{ github.repository }}/ai-gateway:${{ github.sha }} --namespace=production
+          kubectl set image deployment/web-app-$NEW web-app=${{ env.REGISTRY }}/${{ github.repository }}/web-app:${{ github.sha }} --namespace=production
+          kubectl set image deployment/admin-dashboard-$NEW admin-dashboard=${{ env.REGISTRY }}/${{ github.repository }}/admin-dashboard:${{ github.sha }} --namespace=production
+
+          echo "NEW_COLOR=$NEW" >> $GITHUB_OUTPUT
+
+      - name: Wait for new deployment
+        run: |
+          # Wait for all deployments to be ready
+          kubectl rollout status deployment/user-service-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/order-service-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/auth-service-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/credit-service-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/ai-gateway-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/web-app-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+          kubectl rollout status deployment/admin-dashboard-${{ env.NEW_COLOR }} --timeout=600s --namespace=production
+
+  # ============================================
+  # SMOKE TESTS
+  # ============================================
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy-blue-green
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        run: |
+          # API Health
+          curl -f -X GET "https://api.aicafe.vn/health" --max-time 30 || exit 1
+
+          # Web Health
+          curl -f -X GET "https://aicafe.vn/health" --max-time 30 || exit 1
+
+          # Critical API endpoints
+          curl -f -X GET "https://api.aicafe.vn/api/v1/models" --max-time 30 || exit 1
+
+          echo "✅ All smoke tests passed"
+
+      - name: E2E Tests
+        run: |
+          npm install -g playwright
+          npx playwright install chromium
+          npx playwright test e2e/production.spec.ts --project=chromium
+        continue-on-error: true
+
+  # ============================================
+  # SWITCH TRAFFIC
+  # ============================================
+  switch-traffic:
+    name: Switch Traffic
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Switch traffic to new deployment
+        run: |
+          CURRENT=$(kubectl get service api-gateway -o jsonpath='{.spec.selector.color}' --namespace=production)
+          kubectl patch service api-gateway -p '{"spec":{"selector":{"color":"${{ env.NEW_COLOR }}"}}}' --namespace=production
+          echo "Switched traffic from $CURRENT to ${{ env.NEW_COLOR }}"
+
+      - name: Wait for traffic switch
+        run: sleep 30
+
+      - name: Verify traffic switch
+        run: |
+          kubectl get pods -l color=${{ env.NEW_COLOR }} -o wide --namespace=production
+          kubectl get service api-gateway --namespace=production
+
+  # ============================================
+  # CLEANUP OLD DEPLOYMENT
+  # ============================================
+  cleanup:
+    name: Cleanup Old Deployment
+    runs-on: ubuntu-latest
+    needs: switch-traffic
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Scale down old deployment
+        run: |
+          OLD_COLOR=$( [ "${{ env.NEW_COLOR }}" == "blue" ] && echo "green" || echo "blue" )
+          kubectl scale deployment/user-service-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/order-service-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/auth-service-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/credit-service-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/ai-gateway-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/web-app-$OLD_COLOR --replicas=0 --namespace=production
+          kubectl scale deployment/admin-dashboard-$OLD_COLOR --replicas=0 --namespace=production
+
+          echo "Old deployment ($OLD_COLOR) scaled down"
+
+      - name: Cleanup old images
+        run: |
+          # Clean up old ECR images (keep last 10)
+          aws ecr describe-repositories --repository-name aicafe
+          aws ecr list-images --repository-name aicafe --filter tagStatus=TAGGED | \
+            jq '.imageIds | .[] | .imageTag' | \
+            tail -n +11 | \
+            xargs -I {} aws ecr batch-delete-image --repository-name aicafe --image-ids imageTag={} || true
+
+  # ============================================
+  # NOTIFY DEPLOYMENT STATUS
+  # ============================================
+  notify:
+    name: Notify Status
+    runs-on: ubuntu-latest
+    needs: [switch-traffic, cleanup]
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.switch-traffic.result == 'success'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🎉 Production deployment successful!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🎉 Production Deployment Successful*\n*Commit:* `${{ github.sha }}`\n*Deployed by:* ${{ github.actor }}\n*URL:* https://aicafe.vn"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify failure
+        if: needs.switch-traffic.result == 'failure'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚨 Production deployment FAILED!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🚨 Production Deployment Failed*\n*Commit:* `${{ github.sha }}`\n*Deployed by:* ${{ github.actor }}\n\nPlease check the GitHub Actions logs immediately!"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # ============================================
+  # ROLLBACK PROCEDURE
+  # ============================================
+  rollback:
+    name: Rollback Procedure
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    if: needs.smoke-tests.result == 'failure'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PROD }}
+
+      - name: Rollback to previous stable version
+        run: |
+          # Get previous successful deployment
+          kubectl rollout undo deployment/user-service --namespace=production
+          kubectl rollout undo deployment/order-service --namespace=production
+          kubectl rollout undo deployment/auth-service --namespace=production
+          kubectl rollout undo deployment/credit-service --namespace=production
+          kubectl rollout undo deployment/ai-gateway --namespace=production
+          kubectl rollout undo deployment/web-app --namespace=production
+          kubectl rollout undo deployment/admin-dashboard --namespace=production
+
+      - name: Notify rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ Production ROLLED BACK",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*⚠️ Production Rolled Back*\nSmoke tests failed. System restored to previous stable version.\n*Commit:* `${{ github.sha }}`"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

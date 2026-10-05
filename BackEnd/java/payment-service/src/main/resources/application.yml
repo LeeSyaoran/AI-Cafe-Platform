@@ -1,0 +1,34 @@
+# Payment Service application.yml
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aicafe
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8082
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+payment:
+  vnpay:
+    tmn-code: YOUR_TMN_CODE
+    hash-secret: YOUR_HASH_SECRET
+    api-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    return-url: http://localhost:3000/payment/vnpay/callback
+  momo:
+    partner-code: YOUR_PARTNER_CODE
+    secret-key: YOUR_SECRET_KEY
+    api-url: https://test-payment.momo.vn/v2/gateway/api/create
+    return-url: http://localhost:3000/payment/momo/callback

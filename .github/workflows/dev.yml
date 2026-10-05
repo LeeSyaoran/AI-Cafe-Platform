@@ -1,0 +1,449 @@
+name: Development CI/CD
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # BACKEND SERVICES - Java (Spring Boot)
+  # ============================================
+  test-user-service:
+    name: Test User Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/user-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Run tests
+        run: mvn clean test -DskipTests=false
+
+      - name: Build JAR
+        run: mvn package -DskipTests
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }} .
+
+      - name: Run container health check
+        run: |
+          docker run -d --name user-service-test \
+            -e SPRING_PROFILES_ACTIVE=test \
+            -p 8080:8080 \
+            ${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }}
+          sleep 10
+          docker logs user-service-test
+          docker stop user-service-test
+
+  test-order-service:
+    name: Test Order Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/order-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests
+        run: mvn clean test
+
+      - name: Build JAR
+        run: mvn package -DskipTests
+
+  test-payment-service:
+    name: Test Payment Service (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payment-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests
+        run: mvn clean test
+
+      - name: Build JAR
+        run: mvn package -DskipTests
+
+  # ============================================
+  # BACKEND SERVICES - Go
+  # ============================================
+  test-auth-service:
+    name: Test Auth Service (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/auth-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+          cache-dependency-path: services/auth-service/go.sum
+
+      - name: Run tests
+        run: go test -v -race -cover ./...
+
+      - name: Build binary
+        run: CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o auth-service .
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/auth-service:${{ github.sha }} .
+
+  test-credit-service:
+    name: Test Credit Service (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/credit-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+          cache-dependency-path: services/credit-service/go.sum
+
+      - name: Run tests
+        run: go test -v -race -cover ./...
+
+      - name: Build binary
+        run: CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o credit-service .
+
+  # ============================================
+  # AI GATEWAY - Node.js
+  # ============================================
+  test-ai-gateway:
+    name: Test AI Gateway (Node.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/ai-gateway/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build TypeScript
+        run: npm run build
+
+  # ============================================
+  # FRONTEND - Web App
+  # ============================================
+  test-web-app:
+    name: Test Web App (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: false
+
+  test-admin-dashboard:
+    name: Test Admin Dashboard
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  # ============================================
+  # MOBILE APP - React Native
+  # ============================================
+  test-mobile-app:
+    name: Test Mobile App (Expo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Install Ruby (for iOS)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      - name: Install iOS dependencies
+        run: cd ios && pod install && cd ..
+
+      - name: Build iOS
+        run: npx expo run:ios --no-install
+        continue-on-error: true
+
+  # ============================================
+  # POS APP
+  # ============================================
+  test-pos-app:
+    name: Test POS App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/pos/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Android
+        run: npm run build:android
+        continue-on-error: true
+
+  # ============================================
+  # SECURITY SCANS
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run dependency check
+        run: |
+          npm install -g auditjs
+          auditjs ossindex
+
+  # ============================================
+  # DOCKER COMPOSE TEST
+  # ============================================
+  test-docker-compose:
+    name: Test Docker Compose
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: aicafe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test Docker Compose startup
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          sleep 30
+          docker-compose -f docker-compose.test.yml ps
+          docker-compose -f docker-compose.test.yml logs
+
+      - name: Run integration tests
+        run: |
+          docker-compose -f docker-compose.test.yml exec -T api-gateway npm test:integration
+        continue-on-error: true
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down -v
+
+  # ============================================
+  # LINT & CODE QUALITY
+  # ============================================
+  lint-all:
+    name: Lint All Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck on shell scripts
+        uses: ludwan/i-lint-action@v1
+        with:
+          verbose: true
+          parallel: true
+
+      - name: Check for console.log
+        run: |
+          grep -r "console.log" --include="*.ts" --include="*.tsx" apps/ services/ || true
+          grep -r "console.log" --include="*.js" --include="*.jsx" apps/ services/ || true
+
+  # ============================================
+  # NOTIFY ON FAILURE
+  # ============================================
+  notify-failure:
+    name: Notify on Failure
+    needs: [test-user-service, test-order-service, test-payment-service,
+            test-auth-service, test-credit-service, test-ai-gateway,
+            test-web-app, test-admin-dashboard, test-mobile-app, test-pos-app]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ CI/CD Pipeline Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*❌ CI/CD Pipeline Failed*\nRepository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

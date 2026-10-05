@@ -1,0 +1,27 @@
+# User Service application.yml
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aicafe
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret: aicafe-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+  expiration: 86400000
+  refresh-expiration: 604800000

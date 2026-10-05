@@ -1,0 +1,241 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aicafe-postgres
+    environment:
+      POSTGRES_DB: aicafe
+      POSTGRES_USER: aicafe
+      POSTGRES_PASSWORD: aicafe_secret_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aicafe"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aicafe-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: aicafe-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aicafe-network
+
+  api-gateway:
+    build:
+      context: ./go/api-gateway
+      dockerfile: Dockerfile
+    container_name: aicafe-api-gateway
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+      DB_NAME: aicafe
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: aicafe_jwt_secret_key_2024_change_in_production
+      USER_SERVICE_URL: http://user-service:3004
+      PAYMENT_SERVICE_URL: http://payment-service:3005
+      ORDER_SERVICE_URL: http://order-service:3007
+      MEMBER_SERVICE_URL: http://member-service:3006
+      AI_GATEWAY_URL: http://ai-gateway:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  user-service:
+    build:
+      context: ./java/user-service
+      dockerfile: Dockerfile
+    container_name: aicafe-user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3004
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+      JWT_SECRET: aicafe_jwt_secret_key_2024_change_in_production
+      JWT_ACCESS_TOKEN_EXPIRATION: 3600
+      JWT_REFRESH_TOKEN_EXPIRATION: 604800
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  payment-service:
+    build:
+      context: ./java/payment-service
+      dockerfile: Dockerfile
+    container_name: aicafe-payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3005
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-2VRTB9OR}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-BBGHGFKIWOPHGFKEWUIDJWSIJTGVKSJ}
+      VNPAY_API_URL: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-F8BBNECOBGFONKGG}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-GqZPNPDGBMQHPPNMFFQRNGBXODDBAKGC}
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  order-service:
+    build:
+      context: ./java/order-service
+      dockerfile: Dockerfile
+    container_name: aicafe-order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3007
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  member-service:
+    build:
+      context: ./java/member-service
+      dockerfile: Dockerfile
+    container_name: aicafe-member-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3006
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  ai-gateway:
+    build:
+      context: ./python/ai-gateway
+      dockerfile: Dockerfile
+    container_name: aicafe-ai-gateway
+    environment:
+      FASTAPI_PORT: 4000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "4000:4000"
+    networks:
+      - aicafe-network
+
+  notification-service:
+    build:
+      context: ./java/notification-service
+      dockerfile: Dockerfile
+    container_name: aicafe-notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3008
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    ports:
+      - "3008:3008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  admin-service:
+    build:
+      context: ./java/admin-service
+      dockerfile: Dockerfile
+    container_name: aicafe-admin-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3009
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+    ports:
+      - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: aicafe-nginx
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-gateway
+    networks:
+      - aicafe-network
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  aicafe-network:
+    driver: bridge

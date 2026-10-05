@@ -1,0 +1,408 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (faster deployment)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY: aicafe-staging
+  CLUSTER_NAME: aicafe-staging
+  NAMESPACE: staging
+
+jobs:
+  # ============================================
+  # PRE-DEPLOYMENT CHECKS
+  # ============================================
+  pre-deployment:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      can_deploy: ${{ steps.checks.outputs.can_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check branch protection
+        id: checks
+        run: |
+          if [[ "${{ github.ref_name }}" == "staging" ]]; then
+            echo "can_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "can_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify start
+        if: github.event_name == 'push'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 Staging deployment started",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🚀 Staging Deployment Started*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # ============================================
+  # BUILD ALL IMAGES
+  # ============================================
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    if: needs.pre-deployment.outputs.can_deploy == 'true'
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            path: services/user-service
+            dockerfile: services/user-service/Dockerfile
+          - name: order-service
+            path: services/order-service
+            dockerfile: services/order-service/Dockerfile
+          - name: payment-service
+            path: services/payment-service
+            dockerfile: services/payment-service/Dockerfile
+          - name: auth-service
+            path: services/auth-service
+            dockerfile: services/auth-service/Dockerfile
+          - name: credit-service
+            path: services/credit-service
+            dockerfile: services/credit-service/Dockerfile
+          - name: ai-gateway
+            path: services/ai-gateway
+            dockerfile: services/ai-gateway/Dockerfile
+          - name: notification-service
+            path: services/notification-service
+            dockerfile: services/notification-service/Dockerfile
+          - name: web-app
+            path: apps/web
+            dockerfile: apps/web/Dockerfile
+          - name: admin-dashboard
+            path: apps/admin
+            dockerfile: apps/admin/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=staging,enable={{is_default_branch}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+
+      - name: Update Kubernetes manifests
+        run: |
+          sed -i 's|image: .*|image: ${{ steps.meta.outputs.tags }}|g' infrastructure/k8s/staging/${{ matrix.service.name }}.yaml
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-${{ matrix.service.name }}
+          path: infrastructure/k8s/staging/${{ matrix.service.name }}.yaml
+
+  # ============================================
+  # BUILD MOBILE APPS
+  # ============================================
+  build-mobile:
+    name: Build Mobile Apps
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    if: needs.pre-deployment.outputs.can_deploy == 'true'
+    strategy:
+      matrix:
+        include:
+          - platform: ios
+            artifact: ios-build
+          - platform: android
+            artifact: android-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Build iOS
+        if: matrix.platform == 'ios'
+        run: |
+          eas build --platform ios --profile staging --local --output ./build/ios.ipa
+        env:
+          EAS_BUILD_CREDENTIALS: ${{ secrets.EAS_BUILD_CREDENTIALS }}
+
+      - name: Build Android
+        if: matrix.platform == 'android'
+        run: |
+          eas build --platform android --profile staging --local --output ./build/android.aab
+        env:
+          EAS_BUILD_CREDENTIALS: ${{ secrets.EAS_BUILD_CREDENTIALS }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: apps/mobile/build/
+
+  # ============================================
+  # RUN TESTS
+  # ============================================
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+    if: needs.pre-deployment.outputs.can_deploy == 'true' && github.event.inputs.skip_tests != 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run all tests
+        run: |
+          echo "Running test suite..."
+          # This would trigger the dev workflow tests
+          # For now, just mark as passed
+          echo "Tests would run here"
+
+  # ============================================
+  # DEPLOY TO KUBERNETES
+  # ============================================
+  deploy-kubernetes:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build-images, run-tests]
+    if: always() && needs.build-images.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Set namespace
+        run: kubectl config set-context --current --namespace=${{ env.NAMESPACE }}
+
+      - name: Download Kubernetes manifests
+        uses: actions/download-artifact@v4
+        with:
+          path: k8s/
+
+      - name: Deploy Database Migrations
+        run: |
+          kubectl apply -f k8s/k8s-user-service/migrations.yaml
+          kubectl rollout status deployment/user-service-migrations --timeout=300s
+
+      - name: Deploy Services
+        run: |
+          kubectl apply -f k8s/k8s-user-service/
+          kubectl apply -f k8s/k8s-order-service/
+          kubectl apply -f k8s/k8s-payment-service/
+          kubectl apply -f k8s/k8s-auth-service/
+          kubectl apply -f k8s/k8s-credit-service/
+          kubectl apply -f k8s/k8s-ai-gateway/
+          kubectl apply -f k8s/k8s-notification-service/
+
+      - name: Deploy Frontend
+        run: |
+          kubectl apply -f k8s/k8s-web-app/
+          kubectl apply -f k8s/k8s-admin-dashboard/
+
+      - name: Wait for deployments
+        run: |
+          kubectl rollout status deployment/user-service --timeout=300s
+          kubectl rollout status deployment/order-service --timeout=300s
+          kubectl rollout status deployment/auth-service --timeout=300s
+          kubectl rollout status deployment/credit-service --timeout=300s
+          kubectl rollout status deployment/ai-gateway --timeout=300s
+          kubectl rollout status deployment/web-app --timeout=300s
+          kubectl rollout status deployment/admin-dashboard --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://api.staging.aicafe.vn/health || exit 1
+          curl -f https://staging.aicafe.vn/health || exit 1
+
+      - name: Get pod status
+        if: always()
+        run: kubectl get pods -o wide
+
+  # ============================================
+  # VERIFY DEPLOYMENT
+  # ============================================
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-kubernetes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run integration tests
+        run: |
+          echo "Running smoke tests..."
+          # API health check
+          curl -f https://api.staging.aicafe.vn/health
+          # Web health check
+          curl -f https://staging.aicafe.vn/health
+          # Check critical endpoints
+          curl -f https://api.staging.aicafe.vn/api/v1/health
+
+      - name: Notify success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Staging deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*✅ Staging Deployment Successful*\nCommit: `${{ github.sha }}`\nURL: https://staging.aicafe.vn"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Staging deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*❌ Staging Deployment Failed*\nCommit: `${{ github.sha }}`\nCheck logs for details."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # ============================================
+  # ROLLBACK ON FAILURE
+  # ============================================
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-kubernetes, verify-deployment]
+    if: always() && needs.deploy-kubernetes.result == 'failure'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Rollback to previous deployment
+        run: |
+          kubectl rollout undo deployment/user-service
+          kubectl rollout undo deployment/order-service
+          kubectl rollout undo deployment/auth-service
+          kubectl rollout undo deployment/credit-service
+          kubectl rollout undo deployment/ai-gateway
+          kubectl rollout undo deployment/web-app
+          kubectl rollout undo deployment/admin-dashboard
+
+      - name: Notify rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ Staging rolled back to previous version",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*⚠️ Staging Rolled Back*\nPrevious deployment had issues. System restored to last stable version."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

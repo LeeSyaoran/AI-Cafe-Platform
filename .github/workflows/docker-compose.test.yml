@@ -1,0 +1,331 @@
+# Docker Compose for Testing
+version: '3.8'
+
+services:
+  # ============================================
+  # DATABASE
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: aicafe-postgres-test
+    environment:
+      POSTGRES_DB: aicafe_test
+      POSTGRES_USER: aicafe
+      POSTGRES_PASSWORD: testpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./infrastructure/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aicafe -d aicafe_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # REDIS
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: aicafe-redis-test
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_test_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # KAFKA
+  # ============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: aicafe-zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: aicafe-kafka-test
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ============================================
+  # BACKEND SERVICES
+  # ============================================
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: aicafe-user-service-test
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aicafe_test
+      SPRING_DATASOURCE_USERNAME: aicafe
+      SPRING_DATASOURCE_PASSWORD: testpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+    container_name: aicafe-order-service-test
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aicafe_test
+      SPRING_DATASOURCE_USERNAME: aicafe
+      SPRING_DATASOURCE_PASSWORD: testpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      USER_SERVICE_URL: http://user-service:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    container_name: aicafe-payment-service-test
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aicafe_test
+      SPRING_DATASOURCE_USERNAME: aicafe
+      SPRING_DATASOURCE_PASSWORD: testpassword
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ORDER_SERVICE_URL: http://order-service:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: aicafe-auth-service-test
+    ports:
+      - "8084:8080"
+    environment:
+      GO_ENV: test
+      DATABASE_URL: postgres://aicafe:testpassword@postgres:5432/aicafe_test
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: test-jwt-secret-key-for-testing-only
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  credit-service:
+    build:
+      context: .
+      dockerfile: services/credit-service/Dockerfile
+    container_name: aicafe-credit-service-test
+    ports:
+      - "8085:8080"
+    environment:
+      GO_ENV: test
+      DATABASE_URL: postgres://aicafe:testpassword@postgres:5432/aicafe_test
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:29092
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: services/ai-gateway/Dockerfile
+    container_name: aicafe-ai-gateway-test
+    ports:
+      - "8086:8080"
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgres://aicafe:testpassword@postgres:5432/aicafe_test
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:29092
+      AUTH_SERVICE_URL: http://auth-service:8080
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-test-key}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-test-key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: aicafe-notification-service-test
+    ports:
+      - "8087:8080"
+    environment:
+      GO_ENV: test
+      DATABASE_URL: postgres://aicafe:testpassword@postgres:5432/aicafe_test
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  # ============================================
+  # FRONTEND
+  # ============================================
+  web-app:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: aicafe-web-test
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_WS_URL: ws://localhost:8080
+    depends_on:
+      - api-gateway
+
+  admin-dashboard:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: aicafe-admin-test
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    depends_on:
+      - api-gateway
+
+  # ============================================
+  # API GATEWAY
+  # ============================================
+  api-gateway:
+    image: kong:3.4
+    container_name: aicafe-api-gateway-test
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./infrastructure/kong/kong.yml:/kong/kong.yml:ro
+    depends_on:
+      - user-service
+      - order-service
+      - payment-service
+      - auth-service
+      - credit-service
+      - ai-gateway
+
+  # ============================================
+  # MONITORING
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: aicafe-prometheus-test
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: aicafe-grafana-test
+    ports:
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+  # ============================================
+  # VOLUMES
+  # ============================================
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  prometheus_data:
+  grafana_data:
