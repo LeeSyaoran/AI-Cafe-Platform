@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from openai import AsyncOpenAI
 from app.core.config import settings
 

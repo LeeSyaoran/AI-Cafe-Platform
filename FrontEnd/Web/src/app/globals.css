@@ -83,6 +83,29 @@ body {
   transition: transform 0.2s ease;
 }
 
+/* Slide in animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Status badge variants */
 .status-pending { background-color: #78350F; color: #FDE68A; }
 .status-preparing { background-color: #312E81; color: #C7D2FE; }

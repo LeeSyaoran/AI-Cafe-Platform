@@ -4,7 +4,7 @@
 
 export const API_CONFIG = {
   // Backend URL - change per environment
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
 
   // API version
   API_PREFIX: '/v1',

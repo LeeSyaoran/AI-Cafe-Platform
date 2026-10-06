@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Café Platform - Kiến trúc hệ thống</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Color palette - Tech/Enterprise feel */
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-card: #1e293b;
+
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-red: #ef4444;
+            --accent-teal: #14b8a6;
+
+            --border-color: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+
+            color-scheme: dark;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                --bg-primary: #f8fafc;
+                --bg-secondary: #e2e8f0;
+                --bg-tertiary: #cbd5e1;
+                --bg-card: #ffffff;
+
+                --text-primary: #0f172a;
+                --text-secondary: #475569;
+                --text-muted: #64748b;
+
+                --border-color: #e2e8f0;
+                --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        :root[data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #e2e8f0;
+            --bg-tertiary: #cbd5e1;
+            --bg-card: #ffffff;
+
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .diagram-wrapper {
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+
+        .diagram {
+            min-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .layer {
+            position: relative;
+        }
+
+        .layer-label {
+            position: absolute;
+            left: -140px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .layer-content {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .service-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 200px;
+            box-shadow: var(--shadow);
+        }
+
+        .service-group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .service-group-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .service-group-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .service-group-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .service-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .service-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .service-badge {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Client Layer */
+        .clients .layer-content {
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .client-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 150px;
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .client-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(59, 130, 246, 0.3);
+        }
+
+        .client-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .client-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .client-tech {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Large service groups */
+        .wide-group {
+            min-width: 280px;
+        }
+
+        .java-services .service-group-icon {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .python-services .service-group-icon {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .go-services .service-group-icon {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        /* Connection arrows */
+        .connections {
+            display: flex;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        .arrow-down {
+            width: 2px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-cyan));
+            position: relative;
+        }
+
+        .arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid var(--accent-cyan);
+        }
+
+        /* Data layer */
+        .data-layer .layer-content {
+            gap: 32px;
+        }
+
+        .database-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .database-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .database-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .database-purpose {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .database-features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .feature-tag {
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* External layer */
+        .external-layer {
+            background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.05));
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .external-title {
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .provider-grid {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .provider-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .provider-chip:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .provider-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 48px;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .legend {
+                gap: 16px;
+            }
+
+            .layer-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Café Platform</h1>
+            <p class="subtitle">Kiến trúc hệ thống Microservices - Go + Java + Python</p>
+        </header>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--accent-blue);"></div>
+                <span>Frontend</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--accent-cyan);"></div>
+                <span>Go Services</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--accent-orange);"></div>
+                <span>Java Services</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--accent-purple);"></div>
+                <span>Python AI</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--accent-green);"></div>
+                <span>Database</span>
+            </div>
+        </div>
+
+        <div class="diagram-wrapper">
+            <div class="diagram">
+                <!-- CLIENTS LAYER -->
+                <div class="layer clients">
+                    <div class="layer-label">Clients</div>
+                    <div class="layer-content">
+                        <div class="client-card">
+                            <div class="client-icon">🌐</div>
+                            <div class="client-name">Web App</div>
+                            <div class="client-tech">Next.js 14</div>
+                        </div>
+                        <div class="client-card">
+                            <div class="client-icon">📱</div>
+                            <div class="client-name">Mobile</div>
+                            <div class="client-tech">Expo / React Native</div>
+                        </div>
+                        <div class="client-card">
+                            <div class="client-icon">🖥️</div>
+                            <div class="client-name">BackOffice</div>
+                            <div class="client-tech">Next.js + AntD</div>
+                        </div>
+                        <div class="client-card">
+                            <div class="client-icon">📟</div>
+                            <div class="client-name">KDS</div>
+                            <div class="client-tech">React + Vite</div>
+                        </div>
+                        <div class="client-card">
+                            <div class="client-icon">👥</div>
+                            <div class="client-name">Staff App</div>
+                            <div class="client-tech">Expo / React Native</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- API GATEWAY -->
+                <div class="layer">
+                    <div class="layer-label">Gateway</div>
+                    <div class="layer-content">
+                        <div class="service-group wide-group" style="border: 2px solid var(--accent-cyan);">
+                            <div class="service-group-header">
+                                <div class="service-group-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                                    🚪
+                                </div>
+                                <div>
+                                    <div class="service-group-title">API Gateway</div>
+                                    <div class="service-group-subtitle">Go Fiber • Entry Point</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    JWT Authentication
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Rate Limiting
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Request Routing
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Load Balancing
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    WebSocket Support
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- GO SERVICES -->
+                <div class="layer go-services">
+                    <div class="layer-label">Go Services</div>
+                    <div class="layer-content">
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">🔐</div>
+                                <div>
+                                    <div class="service-group-title">Auth Service</div>
+                                    <div class="service-group-subtitle">OTP • JWT</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    OTP Generation
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Token Validation
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Session Mgmt
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">💰</div>
+                                <div>
+                                    <div class="service-group-title">Credit Service</div>
+                                    <div class="service-group-subtitle">Balance • Deduction</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Credit Balance
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Deduct / Refund
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Usage Limits
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">🔌</div>
+                                <div>
+                                    <div class="service-group-title">Session Service</div>
+                                    <div class="service-group-subtitle">WebSocket • Real-time</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Chat Sessions
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Presence
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-cyan);"></span>
+                                    Notifications
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- JAVA SERVICES -->
+                <div class="layer java-services">
+                    <div class="layer-label">Java Services</div>
+                    <div class="layer-content">
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">👤</div>
+                                <div>
+                                    <div class="service-group-title">User Service</div>
+                                    <div class="service-group-subtitle">Profile • Settings</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Profile CRUD
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Preferences
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Avatar Upload
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">💳</div>
+                                <div>
+                                    <div class="service-group-title">Payment Service</div>
+                                    <div class="service-group-subtitle">VNPay • MoMo • ZaloPay</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    VNPay
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    MoMo
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    ZaloPay
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">📦</div>
+                                <div>
+                                    <div class="service-group-title">Order Service</div>
+                                    <div class="service-group-subtitle">Orders • Cart</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Create Order
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Cart Mgmt
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Invoice
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">⭐</div>
+                                <div>
+                                    <div class="service-group-title">Member Service</div>
+                                    <div class="service-group-subtitle">Subscriptions</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Tiers
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Billing
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Auto-renew
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">🎁</div>
+                                <div>
+                                    <div class="service-group-title">Loyalty Service</div>
+                                    <div class="service-group-subtitle">Points • Rewards</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Points
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Rewards
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Referral
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">🔔</div>
+                                <div>
+                                    <div class="service-group-title">Notification</div>
+                                    <div class="service-group-subtitle">Email • SMS • Push</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Email
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    SMS
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Push
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="service-group">
+                            <div class="service-group-header">
+                                <div class="service-group-icon">⚙️</div>
+                                <div>
+                                    <div class="service-group-title">Admin Service</div>
+                                    <div class="service-group-subtitle">Management</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Dashboard
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Products
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-orange);"></span>
+                                    Reports
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- PYTHON AI GATEWAY -->
+                <div class="layer python-services">
+                    <div class="layer-label">AI Gateway</div>
+                    <div class="layer-content">
+                        <div class="service-group wide-group" style="border: 2px solid var(--accent-purple);">
+                            <div class="service-group-header">
+                                <div class="service-group-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                    🧠
+                                </div>
+                                <div>
+                                    <div class="service-group-title">AI Gateway - Python</div>
+                                    <div class="service-group-subtitle">FastAPI • Chat • Image • Video</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-purple);"></span>
+                                    Chat Handler
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-purple);"></span>
+                                    Image Generation
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-purple);"></span>
+                                    Video Generation
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-purple);"></span>
+                                    Cost Controller
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-badge" style="background: var(--accent-purple);"></span>
+                                    Response Cache
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- EXTERNAL AI PROVIDERS -->
+                <div class="layer external-layer">
+                    <div class="external-title">🌐 External AI Providers</div>
+                    <div class="provider-grid">
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #10a37f;"></div>
+                            OpenAI (GPT-4o)
+                        </div>
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #d4a574;"></div>
+                            Anthropic (Claude)
+                        </div>
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #4285f4;"></div>
+                            Google (Gemini)
+                        </div>
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #000000;"></div>
+                            Stability AI
+                        </div>
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #ff6b6b;"></div>
+                            Replicate
+                        </div>
+                        <div class="provider-chip">
+                            <div class="provider-dot" style="background: #0072c6;"></div>
+                            Azure OpenAI
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connections">
+                    <div class="arrow-down"></div>
+                </div>
+
+                <!-- DATA LAYER -->
+                <div class="layer data-layer">
+                    <div class="layer-label">Data Layer</div>
+                    <div class="layer-content">
+                        <div class="database-card">
+                            <div class="database-icon">🐘</div>
+                            <div class="database-name">PostgreSQL 16</div>
+                            <div class="database-purpose">Primary Database</div>
+                            <div class="database-features">
+                                <span class="feature-tag">103 Tables</span>
+                                <span class="feature-tag">UUID</span>
+                                <span class="feature-tag">JSONB</span>
+                            </div>
+                        </div>
+
+                        <div class="database-card">
+                            <div class="database-icon">🔴</div>
+                            <div class="database-name">Redis 7</div>
+                            <div class="database-purpose">Cache & Sessions</div>
+                            <div class="database-features">
+                                <span class="feature-tag">Sessions</span>
+                                <span class="feature-tag">Cache</span>
+                                <span class="feature-tag">Queue</span>
+                            </div>
+                        </div>
+
+                        <div class="database-card">
+                            <div class="database-icon">🗄️</div>
+                            <div class="database-name">MinIO</div>
+                            <div class="database-purpose">S3-compatible Storage</div>
+                            <div class="database-features">
+                                <span class="feature-tag">Files</span>
+                                <span class="feature-tag">Images</span>
+                                <span class="feature-tag">Backup</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value">10+</div>
+                <div class="stat-label">Microservices</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">3</div>
+                <div class="stat-label">Languages</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">103</div>
+                <div class="stat-label">Database Tables</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">6+</div>
+                <div class="stat-label">AI Providers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Client Apps</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

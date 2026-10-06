@@ -41,11 +41,11 @@ public class Payment {
     private String transactionId;
 
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod; // VNPAY, MOMO, ZALOPAY, CREDIT, COD
+    private String paymentMethod;
 
     @Column(nullable = false)
     @Builder.Default
-    private String status = "pending"; // pending, processing, completed, failed, cancelled, refunded
+    private String status = "pending";
 
     @Column(nullable = false)
     private Double amount;
@@ -77,63 +77,6 @@ public class Payment {
 
     @Column(columnDefinition = "TEXT")
     private String note;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-}
-
-@Entity
-@Table(name = "refunds", indexes = {
-    @Index(name = "idx_refunds_payment_id", columnList = "payment_id"),
-    @Index(name = "idx_refunds_status", columnList = "status")
-})
-@EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Refund {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(name = "payment_id", nullable = false)
-    private UUID paymentId;
-
-    @Column(name = "order_id", nullable = false)
-    private UUID orderId;
-
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
-
-    @Column(nullable = false)
-    private Double amount;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private String status = "pending"; // pending, processing, completed, failed
-
-    @Column(name = "reason")
-    private String reason;
-
-    @Column(name = "admin_id")
-    private UUID adminId;
-
-    @Column(name = "processed_at")
-    private Instant processedAt;
-
-    @Column(name = "refund_transaction_id")
-    private String refundTransactionId;
-
-    @Column(name = "failure_reason")
-    private String failureReason;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

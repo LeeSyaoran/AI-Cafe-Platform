@@ -1,6 +1,7 @@
 # ============================================
 # AI Café Platform - All in One
-# Run: docker compose up -d
+# Run: docker compose up -d --build (build + start)
+# Run: docker compose up -d (start only, use cached images)
 # ============================================
 
 version: '3.8'
@@ -63,6 +64,7 @@ services:
     build:
       context: ./BackEnd/go/api-gateway
       dockerfile: Dockerfile
+    image: aicafe-api-gateway:latest
     container_name: aicafe-api-gateway
     environment:
       PORT: 3000
@@ -85,6 +87,7 @@ services:
     build:
       context: ./BackEnd/java/user-service
       dockerfile: Dockerfile
+    image: aicafe-user-service:latest
     container_name: aicafe-user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -109,6 +112,7 @@ services:
     build:
       context: ./BackEnd/java/payment-service
       dockerfile: Dockerfile
+    image: aicafe-payment-service:latest
     container_name: aicafe-payment-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -132,6 +136,7 @@ services:
     build:
       context: ./BackEnd/java/order-service
       dockerfile: Dockerfile
+    image: aicafe-order-service:latest
     container_name: aicafe-order-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -153,8 +158,9 @@ services:
   # === MEMBER SERVICE (Java) ===
   member-service:
     build:
-      context: ./BackEnd/java/member-service
-      dockerfile: Dockerfile
+      context: ./BackEnd/java
+      dockerfile: member-service/Dockerfile
+    image: aicafe-member-service:latest
     container_name: aicafe-member-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -173,27 +179,12 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === AI GATEWAY (Python) - COMMENTED OUT DUE TO SLOW NETWORK
-  # ai-gateway:
-  #   build:
-  #     context: ./BackEnd/python/ai-gateway
-  #     dockerfile: Dockerfile
-  #   container_name: aicafe-ai-gateway
-  #   environment:
-  #     FASTAPI_PORT: 4000
-  #     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-  #   ports:
-  #     - "4000:4000"
-  #   networks:
-  #     - aicafe-network
-  #   restart: unless-stopped
-
   # === NOTIFICATION SERVICE (Java) ===
   notification-service:
     build:
       context: ./BackEnd/java/notification-service
       dockerfile: Dockerfile
+    image: aicafe-notification-service:latest
     container_name: aicafe-notification-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -213,6 +204,7 @@ services:
     build:
       context: ./BackEnd/java/admin-service
       dockerfile: Dockerfile
+    image: aicafe-admin-service:latest
     container_name: aicafe-admin-service
     environment:
       SPRING_PROFILES_ACTIVE: docker

@@ -34,6 +34,7 @@ public class UserController {
                 userId,
                 request.getFullName(),
                 request.getDisplayName(),
+                request.getPhone(),
                 request.getDateOfBirth(),
                 request.getGender()
         );

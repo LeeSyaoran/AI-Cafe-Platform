@@ -1,21 +1,32 @@
-# Multi-stage build for Order Service
+# Multi-stage build for Java services
 FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR /build
 
+# Install build tools
+RUN apk add --no-cache maven bash
+
+# Copy pom.xml first for dependency caching
 COPY pom.xml .
-RUN apk add --no-cache maven
-# Dependencies downloaded during build
 
+# Download dependencies (this layer will be cached if pom.xml doesn't change)
+RUN mvn dependency:go-offline -B || true
+
+# Copy source code
 COPY src ./src
-RUN mvn package -DskipTests -B
 
+# Build with Lombok annotation processing
+RUN mvn clean package -DskipTests -B
+
+# Final image
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
+# Copy jar from builder
 COPY --from=builder /build/target/*.jar app.jar
 
-EXPOSE 8083
+# Expose port
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

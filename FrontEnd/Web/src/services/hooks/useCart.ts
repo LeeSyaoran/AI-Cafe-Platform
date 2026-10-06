@@ -3,7 +3,7 @@
 // ============================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as cartApi from '../api/cart';
+import * as cartApi from '../api/endpoints/cart';
 import { queryKeys } from './queryClient';
 import type { AddToCartRequest, UpdateCartItemRequest } from '../../types';
 
@@ -64,7 +64,7 @@ export function useCheckout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => cartApi.checkoutCart(),
+    mutationFn: () => cartApi.checkout(),
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.cart, null);
       // Invalidate orders

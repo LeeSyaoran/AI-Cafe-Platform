@@ -30,7 +30,7 @@ export const queryKeys = {
   cafe: (id: string) => ['cafes', id] as const,
   categories: ['categories'] as const,
   category: (id: string) => ['categories', id] as const,
-  products: (filters?: Record<string, string>) => ['products', filters] as const,
+  products: (filters?: Record<string, string | number | undefined>) => ['products', filters] as const,
   product: (id: string) => ['products', id] as const,
   featured: ['products', 'featured'] as const,
   bestSellers: ['products', 'best-sellers'] as const,

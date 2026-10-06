@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Café Platform - Code Flow</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --accent-cyan: #06b6d4;
+            --border-color: #475569;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+        }
+
+        /* Navigation */
+        .nav {
+            background: var(--bg-secondary);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 100px;
+            z-index: 99;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .nav-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Flow Diagram */
+        .flow-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .flow-title {
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .flow-title::before {
+            content: '▶';
+            color: var(--accent-green);
+        }
+
+        /* Step boxes */
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .step {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            min-width: 200px;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .step.client {
+            background: linear-gradient(135deg, var(--bg-tertiary), #1e3a5f);
+            border-color: var(--accent-blue);
+        }
+
+        .step.controller {
+            background: linear-gradient(135deg, var(--bg-tertiary), #3b1f5f);
+            border-color: var(--accent-purple);
+        }
+
+        .step.service {
+            background: linear-gradient(135deg, var(--bg-tertiary), #1f5f3b);
+            border-color: var(--accent-green);
+        }
+
+        .step.repository {
+            background: linear-gradient(135deg, var(--bg-tertiary), #5f3b1f);
+            border-color: var(--accent-orange);
+        }
+
+        .step.database {
+            background: linear-gradient(135deg, var(--bg-tertiary), #5f1f3b);
+            border-color: var(--accent-red);
+        }
+
+        .step.external {
+            background: linear-gradient(135deg, var(--bg-tertiary), #1f3b5f);
+            border-color: var(--accent-cyan);
+        }
+
+        .step-header {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-body {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .step-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .step.controller .step-badge { background: var(--accent-purple); }
+        .step.service .step-badge { background: var(--accent-green); }
+        .step.repository .step-badge { background: var(--accent-orange); }
+        .step.database .step-badge { background: var(--accent-red); }
+        .step.external .step-badge { background: var(--accent-cyan); }
+
+        /* Arrow connector */
+        .arrow {
+            color: var(--accent-blue);
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .code-keyword { color: var(--accent-purple); }
+        .code-string { color: var(--accent-green); }
+        .code-comment { color: var(--text-secondary); }
+        .code-method { color: var(--accent-cyan); }
+        .code-class { color: var(--accent-orange); }
+        .code-annotation { color: var(--accent-blue); }
+
+        /* Response JSON */
+        .response-block {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 1px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .response-header {
+            color: var(--accent-green);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--accent-blue);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.35rem;
+            top: 1.2rem;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            border: 2px solid var(--bg-primary);
+        }
+
+        .timeline-number {
+            background: var(--accent-blue);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Summary cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+        }
+
+        .summary-card h3 {
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-card .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .method.post { background: var(--accent-green); color: white; }
+        .method.get { background: var(--accent-blue); color: white; }
+        .method.put { background: var(--accent-orange); color: white; }
+        .method.delete { background: var(--accent-red); color: white; }
+
+        .summary-card .path {
+            font-family: monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Search */
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* SQL blocks */
+        .sql-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-orange);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .sql-keyword { color: var(--accent-purple); font-weight: 600; }
+        .sql-string { color: var(--accent-green); }
+        .sql-comment { color: var(--text-secondary); }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.client { background: var(--accent-blue); }
+        .legend-color.controller { background: var(--accent-purple); }
+        .legend-color.service { background: var(--accent-green); }
+        .legend-color.repository { background: var(--accent-orange); }
+        .legend-color.database { background: var(--accent-red); }
+        .legend-color.external { background: var(--accent-cyan); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .nav { padding: 0.75rem 1rem; }
+            .nav-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+            .container { padding: 1rem; }
+            .step { min-width: 100%; }
+        }
+
+        /* Highlight */
+        .highlight {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+        }
+
+        /* Exception box */
+        .exception-box {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border: 1px solid var(--accent-red);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .exception-title {
+            color: var(--accent-red);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>☕ AI Café Platform - Code Flow</h1>
+        <p>Visual documentation for microservices architecture and data flow</p>
+    </header>
+
+    <nav class="nav">
+        <button class="nav-btn active" onclick="showSection('overview')">📊 Overview</button>
+        <button class="nav-btn" onclick="showSection('auth')">🔐 Auth Flow</button>
+        <button class="nav-btn" onclick="showSection('order')">🛒 Order Flow</button>
+        <button class="nav-btn" onclick="showSection('payment')">💳 Payment Flow</button>
+        <button class="nav-btn" onclick="showSection('callback')">📬 Callback Flow</button>
+        <button class="nav-btn" onclick="showSection('database')">🗄️ Database</button>
+        <button class="nav-btn" onclick="showSection('exception')">⚠️ Exception</button>
+    </nav>
+
+    <div class="container">
+        <!-- Overview Section -->
+        <section id="overview" class="section active">
+            <h2 class="flow-title">Tổng quan Kiến trúc</h2>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <span class="method post">POST</span>
+                    <h3>Register/Login</h3>
+                    <p class="path">/v1/auth/register, /v1/auth/login</p>
+                    <p>Tạo tài khoản và xác thực người dùng</p>
+                </div>
+                <div class="summary-card">
+                    <span class="method post">POST</span>
+                    <h3>Create Order</h3>
+                    <p class="path">/v1/orders</p>
+                    <p>Tạo đơn hàng từ giỏ hàng</p>
+                </div>
+                <div class="summary-card">
+                    <span class="method post">POST</span>
+                    <h3>Create Payment</h3>
+                    <p class="path">/v1/payments</p>
+                    <p>Khởi tạo thanh toán với VNPay/MoMo/ZaloPay</p>
+                </div>
+                <div class="summary-card">
+                    <span class="method get">GET</span>
+                    <h3>Payment Callback</h3>
+                    <p class="path">/v1/payments/callback/{method}</p>
+                    <p>Xử lý kết quả thanh toán từ cổng thanh toán</p>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color client"></div>
+                    <span>Client (HTTP Request)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color controller"></div>
+                    <span>Controller</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color service"></div>
+                    <span>Service</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color repository"></div>
+                    <span>Repository</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color database"></div>
+                    <span>Database</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color external"></div>
+                    <span>External (VNPay/MoMo)</span>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Kiến trúc 4 Layers</h3>
+                <div class="flow-row">
+                    <div class="step client">
+                        <div class="step-header">
+                            <span class="step-badge">HTTP</span>
+                            Controller Layer
+                        </div>
+                        <div class="step-body">
+                            Nhận HTTP Request<br>
+                            Validate Input<br>
+                            Gọi Service<br>
+                            Trả Response
+                        </div>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">Logic</span>
+                            Service Layer
+                        </div>
+                        <div class="step-body">
+                            Business Logic<br>
+                            Transaction Management<br>
+                            Cross-Service Calls
+                        </div>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="step repository">
+                        <div class="step-header">
+                            <span class="step-badge">DAO</span>
+                            Repository Layer
+                        </div>
+                        <div class="step-body">
+                            Data Access<br>
+                            CRUD Operations<br>
+                            Custom Queries
+                        </div>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="step database">
+                        <div class="step-header">
+                            <span class="step-badge">DB</span>
+                            Entity Layer
+                        </div>
+                        <div class="step-body">
+                            JPA Mapping<br>
+                            Table Representation<br>
+                            Domain Objects
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Auth Flow Section -->
+        <section id="auth" class="section">
+            <h2 class="flow-title">Auth Flow - Register/Login/Refresh</h2>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Register Flow</h3>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-number">1</span>
+                        <strong>Client gửi Request</strong>
+                        <div class="code-block">
+                            <pre><span class="code-keyword">POST</span> /v1/auth/register
+{
+    "email": "user@example.com",
+    "password": "password123",
+    "phone": "0123456789"
+}</pre>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-number">2</span>
+                        <strong>AuthController.register() - Validate Input</strong>
+                        <div class="code-block">
+                            <pre><span class="code-annotation">@Valid @RequestBody</span> RegisterRequest request
+<span class="code-comment">// @NotBlank email, @Email, @Size(min=8) password</span></pre>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-number">3</span>
+                        <strong>UserService.createUser() - Tạo User</strong>
+                        <div class="code-block">
+                            <pre><span class="code-class">UserService</span>.<span class="code-method">createUser</span>(email, password, phone, "customer")
+<span class="code-comment">// INSERT INTO users VALUES (...)</span></pre>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-number">4</span>
+                        <strong>AuthService.login() - Validate Credentials</strong>
+                        <div class="code-block">
+                            <pre><span class="code-class">UserRepository</span>.<span class="code-method">findByEmail</span>(email)
+<span class="code-comment">// SELECT * FROM users WHERE email = ?</span>
+<span class="code-comment">// Verify password hash</span>
+<span class="code-comment">// Check user status</span></pre>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-number">5</span>
+                        <strong>Generate JWT Tokens</strong>
+                        <div class="code-block">
+                            <pre><span class="code-comment">// Access Token (15 phút)</span>
+<span class="code-keyword">Jwt</span>.builder()
+    .<span class="code-method">subject</span>(userId)
+    .<span class="code-method">claim</span>("email", email)
+    .<span class="code-method">claim</span>("role", role)
+    .<span class="code-method">claim</span>("type", "access")
+    .<span class="code-method">expiration</span>(now + 15min)
+    .<span class="code-method">signWith</span>(key)
+
+<span class="code-comment">// Refresh Token (7 ngày) - Lưu vào DB</span>
+<span class="code-class">RefreshToken</span>.builder()
+    .<span class="code-method">token</span>(token)
+    .<span class="code-method">userId</span>(userId)
+    .<span class="code-method">expiresAt</span>(now + 7days)
+    .<span class="code-method">build</span>()
+<span class="code-class">RefreshTokenRepository</span>.<span class="code-method">save</span>(refreshToken)</pre>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-number">6</span>
+                        <strong>Trả Response</strong>
+                        <div class="response-block">
+                            <div class="response-header">HTTP 201 Created</div>
+                            <pre>{
+    "success": true,
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "tokenType": "Bearer",
+        "expiresIn": 900,
+        "user": {
+            "id": "uuid",
+            "email": "user@example.com",
+            "role": "customer"
+        }
+    }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Refresh Token Flow</h3>
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step client">
+                        <div class="step-header"><span class="step-badge">HTTP</span> Client</div>
+                        <div class="step-body">POST /v1/auth/refresh { refreshToken: "..." }</div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue);">↓</div>
+                    <div class="step controller">
+                        <div class="step-header"><span class="step-badge">@Valid</span> AuthController</div>
+                        <div class="step-body">refresh()</div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue);">↓</div>
+                    <div class="step service">
+                        <div class="step-header"><span class="step-badge">@Transactional</span> AuthService</div>
+                        <div class="step-body">
+                            1. findByToken() - Validate token<br>
+                            2. Check revoked, expired<br>
+                            3. Revoke old token<br>
+                            4. Generate new tokens
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue);">↓</div>
+                    <div class="step repository">
+                        <div class="step-header"><span class="step-badge">DB</span> RefreshTokenRepository</div>
+                        <div class="step-body">
+                            UPDATE refresh_tokens<br>
+                            SET revoked = true, revoked_at = now()<br>
+                            WHERE token = ?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Source Code Reference</h3>
+                <div class="code-block">
+                    <pre><span class="code-comment">// AuthController.java</span>
+<span class="code-annotation">@RestController</span>
+<span class="code-annotation">@RequestMapping</span>(<span class="code-string">"/v1/auth"</span>)
+<span class="code-keyword">public class</span> <span class="code-class">AuthController</span> {
+
+    <span class="code-keyword">private final</span> <span class="code-class">AuthService</span> authService;
+    <span class="code-keyword">private final</span> <span class="code-class">UserService</span> userService;
+
+    <span class="code-annotation">@PostMapping</span>(<span class="code-string">"/register"</span>)
+    <span class="code-keyword">public</span> <span class="code-class">ResponseEntity</span>&lt;<span class="code-class">ApiResponse</span>&lt;<span class="code-class">AuthResponse</span>&gt;&gt; <span class="code-method">register</span>(
+            <span class="code-annotation">@Valid</span> <span class="code-annotation">@RequestBody</span> <span class="code-class">RegisterRequest</span> request) {
+
+        <span class="code-comment">// 1. Create User</span>
+        <span class="code-keyword">var</span> user = userService.<span class="code-method">createUser</span>(
+            request.<span class="code-method">getEmail</span>(),
+            request.<span class="code-method">getPassword</span>(),
+            request.<span class="code-method">getPhone</span>(),
+            <span class="code-string">"customer"</span>
+        );
+
+        <span class="code-comment">// 2. Login (Get tokens)</span>
+        <span class="code-keyword">var</span> tokens = authService.<span class="code-method">login</span>(
+            request.<span class="code-method">getEmail</span>(),
+            request.<span class="code-method">getPassword</span>()
+        );
+
+        <span class="code-comment">// 3. Build Response</span>
+        <span class="code-keyword">return</span> <span class="code-class">ResponseEntity</span>.<span class="code-method">status</span>(<span class="code-class">HttpStatus</span>.CREATED)
+                .<span class="code-method">body</span>(<span class="code-class">ApiResponse</span>.<span class="code-method">ok</span>(response));
+    }
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Order Flow Section -->
+        <section id="order" class="section">
+            <h2 class="flow-title">Create Order Flow</h2>
+
+            <div class="flow-container">
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step client">
+                        <div class="step-header">
+                            <span class="step-badge">POST</span>
+                            Client
+                        </div>
+                        <div class="step-body">
+<pre>{
+    "cafeId": "uuid",
+    "orderType": "pickup",
+    "items": [
+        {"productId": "uuid", "quantity": 2}
+    ],
+    "promoCode": "DISCOUNT10"
+}</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step controller">
+                        <div class="step-header">
+                            <span class="step-badge">@Valid</span>
+                            OrderController.createOrder()
+                        </div>
+                        <div class="step-body">
+                            Validate CreateOrderRequest<br>
+                            Gọi orderService.createOrder()
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">@Transactional</span>
+                            OrderService.createOrder()
+                        </div>
+                        <div class="step-body">
+                            <strong>Step 1:</strong> cartRepository.findByUserIdAndCafeId()<br>
+                            <strong>Step 2:</strong> Generate orderNumber (ORD20240115A3F2)<br>
+                            <strong>Step 3:</strong> Calculate subtotal<br>
+                            <strong>Step 4:</strong> Apply promotion (if promoCode)<br>
+                            <strong>Step 5:</strong> Calculate tax (10%) + total<br>
+                            <strong>Step 6:</strong> Build Order entity<br>
+                            <strong>Step 7:</strong> Copy items from Cart<br>
+                            <strong>Step 8:</strong> orderRepository.save()<br>
+                            <strong>Step 9:</strong> Clear cart (delete)
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step repository">
+                        <div class="step-header">
+                            <span class="step-badge">DAO</span>
+                            CartRepository / OrderRepository
+                        </div>
+                        <div class="step-body">
+                            SELECT * FROM carts WHERE user_id = ? AND cafe_id = ?<br>
+                            INSERT INTO orders (...)<br>
+                            INSERT INTO order_items (...)<br>
+                            DELETE FROM cart_items WHERE cart_id = ?<br>
+                            DELETE FROM carts WHERE id = ?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Calculate Discount Flow</h3>
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">Logic</span>
+                            applyPromotion()
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-comment">// promotionRepository.findByCode(promoCode)</span>
+<span class="code-comment">// SELECT * FROM promotions WHERE code = ?</span>
+
+<span class="code-comment">// Validate promotion</span>
+<span class="code-keyword">if</span> (promo.startDate > now) throw PROMO_NOT_STARTED;
+<span class="code-keyword">if</span> (promo.endDate < now) throw PROMO_EXPIRED;
+<span class="code-keyword">if</span> (promo.usedCount >= promo.usageLimit) throw PROMO_LIMIT_REACHED;
+
+<span class="code-comment">// Calculate discount</span>
+<span class="code-keyword">if</span> ("percentage".equals(promo.type)) {
+    discount = subtotal * (promo.value / 100);
+    <span class="code-keyword">if</span> (discount > promo.maxDiscount) {
+        discount = promo.maxDiscount;
+    }
+} <span class="code-keyword">else</span> {
+    discount = promo.value; <span class="code-comment">// fixed amount</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Source Code</h3>
+                <div class="code-block">
+                    <pre><span class="code-comment">// OrderService.java</span>
+<span class="code-annotation">@Service</span>
+<span class="code-keyword">public class</span> <span class="code-class">OrderService</span> {
+
+    <span class="code-keyword">private final</span> <span class="code-class">OrderRepository</span> orderRepository;
+    <span class="code-keyword">private final</span> <span class="code-class">CartRepository</span> cartRepository;
+    <span class="code-keyword">private final</span> <span class="code-class">PromotionRepository</span> promotionRepository;
+
+    <span class="code-annotation">@Transactional</span>
+    <span class="code-keyword">public</span> <span class="code-class">Order</span> <span class="code-method">createOrder</span>(...) {
+        <span class="code-comment">// 1. Get cart</span>
+        <span class="code-class">Cart</span> cart = cartRepository.<span class="code-method">findByUserIdAndCafeId</span>(userId, cafeId)
+                .<span class="code-method">orElseThrow</span>(() -> <span class="code-keyword">new</span> <span class="code-class">ApiException</span>(NOT_FOUND, <span class="code-string">"CART_EMPTY"</span>));
+
+        <span class="code-comment">// 2. Calculate totals</span>
+        <span class="code-keyword">double</span> subtotal = cart.<span class="code-method">getSubtotal</span>();
+        <span class="code-keyword">double</span> discount = (promoCode != <span class="code-keyword">null</span>) ? <span class="code-method">applyPromotion</span>(cart, promoCode) : 0;
+        <span class="code-keyword">double</span> tax = (subtotal - discount) * 0.10;
+        <span class="code-keyword">double</span> total = subtotal - discount + tax;
+
+        <span class="code-comment">// 3. Build & Save Order</span>
+        <span class="code-class">Order</span> order = <span class="code-class">Order</span>.<span class="code-method">builder</span>()...<span class="code-method">build</span>();
+        order = orderRepository.<span class="code-method">save</span>(order);
+
+        <span class="code-comment">// 4. Clear Cart</span>
+        cartItemRepository.<span class="code-method">deleteAllByCartId</span>(cart.<span class="code-method">getId</span>());
+        cartRepository.<span class="code-method">delete</span>(cart);
+
+        <span class="code-keyword">return</span> order;
+    }
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payment Flow Section -->
+        <section id="payment" class="section">
+            <h2 class="flow-title">Payment Flow</h2>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Create Payment</h3>
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step client">
+                        <div class="step-header">
+                            <span class="step-badge">POST</span>
+                            Client
+                        </div>
+                        <div class="step-body">
+<pre>{
+    "orderId": "uuid",
+    "companyId": "uuid",
+    "amount": 125000,
+    "paymentMethod": "VNPAY"
+}</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step controller">
+                        <div class="step-header">
+                            <span class="step-badge">@Valid</span>
+                            PaymentController.createPayment()
+                        </div>
+                        <div class="step-body">
+                            Validate CreatePaymentRequest<br>
+                            Gọi paymentService.createPayment()
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">@Transactional</span>
+                            PaymentService.createPayment()
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-comment">// 1. Check existing payment</span>
+paymentRepository.findByOrderId(orderId)
+<span class="code-comment">// If exists & pending → throw 409 CONFLICT</span>
+
+<span class="code-comment">// 2. Generate transaction ID</span>
+transactionId = "TX" + timestamp + UUID.substring(0,8)
+
+<span class="code-comment">// 3. Build Payment entity</span>
+Payment.builder()
+    .status("pending")
+    .expiredAt(now + 15min)
+    .build()
+
+<span class="code-comment">// 4. Generate payment URL</span>
+<span class="code-keyword">switch</span>(method) {
+    <span class="code-keyword">case</span> "VNPAY" → vnPayService.createPaymentUrl()
+    <span class="code-keyword">case</span> "MOMO" → moMoService.createPaymentUrl()
+    <span class="code-keyword">case</span> "ZALOPAY" → zaloPayService.createPaymentUrl()
+}
+
+<span class="code-comment">// 5. Save Payment</span>
+paymentRepository.save(payment)</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step external">
+                        <div class="step-header">
+                            <span class="step-badge">Gateway</span>
+                            VNPay / MoMo / ZaloPay
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-comment">// VNPayService.createPaymentUrl()</span>
+<span class="code-comment">// Build query params</span>
+params = {
+    vnp_Amount: amount * 100,
+    vnp_TxnRef: transactionId,
+    vnp_ReturnUrl: configuredUrl,
+    vnp_CreateDate: now.format("yyyyMMddHHmmss")
+}
+
+<span class="code-comment">// Generate signature</span>
+signature = HMAC-SHA512(hashSecret, queryString)
+
+<span class="code-comment">// Return payment URL</span>
+<span class="code-keyword">return</span> "https://sandbox.vnpayment.vn/?" + query + signature</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">VNPay URL Generation</h3>
+                <div class="code-block">
+                    <pre><span class="code-comment">// VnPayService.java</span>
+<span class="code-keyword">public</span> <span class="code-class">String</span> <span class="code-method">createPaymentUrl</span>(<span class="code-class">Payment</span> payment) {
+    <span class="code-comment">// 1. Build parameters (sorted alphabetically)</span>
+    <span class="code-class">Map</span>&lt;<span class="code-class">String</span>, <span class="code-class">String</span>&gt; params = <span class="code-keyword">new</span> <span class="code-class">TreeMap</span>&lt;&gt;();
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_Version"</span>, <span class="code-string">"2.1.0"</span>);
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_Command"</span>, <span class="code-string">"pay"</span>);
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_TmnCode"</span>, tmnCode);
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_Amount"</span>, String.<span class="code-method">valueOf</span>(payment.<span class="code-method">getAmount</span>() * 100));
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_TxnRef"</span>, payment.<span class="code-method">getTransactionId</span>());
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_ReturnUrl"</span>, returnUrl);
+    params.<span class="code-method">put</span>(<span class="code-string">"vnp_CreateDate"</span>, now.<span class="code-method">format</span>(<span class="code-string">"yyyyMMddHHmmss"</span>));
+
+    <span class="code-comment">// 2. Create query string</span>
+    <span class="code-class">String</span> query = params.<span class="code-method">entrySet</span>().<span class="code-method">stream</span>()
+        .<span class="code-method">map</span>(e -> e.<span class="code-method">getKey</span>() + <span class="code-string">"="</span> + URLEncode(e.<span class="code-method">getValue</span>()))
+        .<span class="code-method">collect</span>(<span class="code-method">joining</span>(<span class="code-string">"&"</span>));
+
+    <span class="code-comment">// 3. Generate HMAC-SHA512 signature</span>
+    <span class="code-class">String</span> signature = <span class="code-method">hmacSHA512</span>(hashSecret, query);
+
+    <span class="code-comment">// 4. Build final URL</span>
+    <span class="code-keyword">return</span> apiUrl + <span class="code-string">"?"</span> + query + <span class="code-string">"&vnp_SecureHash="</span> + signature;
+}</pre>
+                </div>
+            </div>
+
+            <div class="response-block">
+                <div class="response-header">HTTP 200 OK - Response</div>
+                <pre>{
+    "success": true,
+    "data": {
+        "id": "uuid",
+        "transactionId": "TX1705314567A3F2CD1E",
+        "paymentUrl": "https://sandbox.vnpayment.vn/...?vnp_SecureHash=...",
+        "status": "pending",
+        "amount": 125000,
+        "expiredAt": "2024-01-15T12:30:00Z"
+    }
+}</pre>
+            </div>
+        </section>
+
+        <!-- Callback Flow Section -->
+        <section id="callback" class="section">
+            <h2 class="flow-title">Payment Callback Flow</h2>
+
+            <div class="flow-container">
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step external">
+                        <div class="step-header">
+                            <span class="step-badge">Gateway</span>
+                            VNPay / MoMo / ZaloPay
+                        </div>
+                        <div class="step-body">
+<pre>GET /v1/payments/callback/vnpay?
+    vnp_ResponseCode=00&
+    vnp_TransactionStatus=00&
+    vnp_Amount=12500000&
+    vnp_TxnRef=TX1705314567A3F2CD1E&
+    vnp_SecureHash=...</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">@Transactional</span>
+                            PaymentService.handleCallback()
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-comment">// 1. Parse callback data</span>
+params = parseQueryString(callbackData)
+
+<span class="code-comment">// 2. Verify callback</span>
+<span class="code-keyword">switch</span>(method) {
+    <span class="code-keyword">case</span> "VNPAY" → vnPayService.verifyCallback()
+    <span class="code-keyword">case</span> "MOMO" → moMoService.verifyCallback()
+}
+
+<span class="code-comment">// 3. Update payment status</span>
+<span class="code-keyword">if</span> (responseCode == "00" && status == "00") {
+    payment.setStatus("completed");
+    payment.setPaidAt(now);
+} <span class="code-keyword">else</span> {
+    payment.setStatus("failed");
+}
+
+<span class="code-comment">// 4. Save payment</span>
+paymentRepository.save(payment);
+
+<span class="code-comment">// 5. TODO: Update order status</span>
+<span class="code-comment">// 6. TODO: Send notification</span></pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step database">
+                        <div class="step-header">
+                            <span class="step-badge">UPDATE</span>
+                            Database
+                        </div>
+                        <div class="step-body">
+<pre>UPDATE payments
+SET status = 'completed',
+    paid_at = NOW()
+WHERE transaction_id = ?</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">VNPay Callback Verification</h3>
+                <div class="code-block">
+                    <pre><span class="code-comment">// VnPayService.verifyCallback()</span>
+<span class="code-keyword">public</span> <span class="code-class">Payment</span> <span class="code-method">verifyCallback</span>(<span class="code-class">String</span> callbackData) {
+    <span class="code-comment">// 1. Parse query string to map</span>
+    <span class="code-class">Map</span>&lt;<span class="code-class">String</span>, <span class="code-class">String</span>&gt; params = <span class="code-method">parseQueryString</span>(callbackData);
+
+    <span class="code-comment">// 2. Extract secure hash and order info</span>
+    <span class="code-class">String</span> secureHash = params.<span class="code-method">remove</span>(<span class="code-string">"vnp_SecureHash"</span>);
+    <span class="code-class">String</span> orderInfo = params.<span class="code-method">get</span>(<span class="code-string">"vnp_OrderInfo"</span>);
+
+    <span class="code-comment">// 3. Recreate signature from params</span>
+    <span class="code-class">String</span> signData = <span class="code-method">rebuildQueryString</span>(params);
+    <span class="code-class">String</span> calculatedHash = <span class="code-method">hmacSHA512</span>(hashSecret, signData);
+
+    <span class="code-comment">// 4. Compare signatures</span>
+    <span class="code-keyword">if</span> (!secureHash.<span class="code-method">equals</span>(calculatedHash)) {
+        <span class="code-comment">// Signature mismatch - potential fraud</span>
+        <span class="code-keyword">return</span> payment.<span class="code-method">setStatus</span>(<span class="code-string">"failed"</span>);
+    }
+
+    <span class="code-comment">// 5. Check response code</span>
+    <span class="code-class">String</span> responseCode = params.<span class="code-method">get</span>(<span class="code-string">"vnp_ResponseCode"</span>);
+    <span class="code-keyword">if</span> (<span class="code-string">"00"</span>.<span class="code-method">equals</span>(responseCode)) {
+        <span class="code-comment">// Payment successful</span>
+        payment.<span class="code-method">setStatus</span>(<span class="code-string">"completed"</span>);
+        payment.<span class="code-method">setPaidAt</span>(<span class="code-class">Instant</span>.<span class="code-method">now</span>());
+    } <span class="code-keyword">else</span> {
+        payment.<span class="code-method">setStatus</span>(<span class="code-string">"failed"</span>);
+    }
+
+    <span class="code-keyword">return</span> payment;
+}</pre>
+                </div>
+            </div>
+
+            <div class="exception-box">
+                <div class="exception-title">⚠️ TODO: Future Implementation</div>
+                <p>Hiện tại callback chỉ cập nhật trạng thái payment. Cần thêm:</p>
+                <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                    <li>orderService.updatePaymentStatus() - Cập nhật trạng thái đơn hàng</li>
+                    <li>notificationService.send() - Gửi thông báo cho khách hàng</li>
+                    <li>loyaltyService.processPoints() - Tích điểm loyalty</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Database Section -->
+        <section id="database" class="section">
+            <h2 class="flow-title">Database Schema</h2>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Auth Tables</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Columns</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>users</strong></td>
+                                <td>id, email, password_hash, phone, role, status, company_id, created_at</td>
+                                <td>Tài khoản người dùng</td>
+                            </tr>
+                            <tr>
+                                <td><strong>user_profiles</strong></td>
+                                <td>id, user_id, full_name, display_name, avatar_url, date_of_birth, gender</td>
+                                <td>Thông tin profile</td>
+                            </tr>
+                            <tr>
+                                <td><strong>refresh_tokens</strong></td>
+                                <td>id, user_id, token, expires_at, revoked, revoked_at, created_at</td>
+                                <td>JWT refresh tokens</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sql-block" style="margin-top: 1rem;">
+                    <pre><span class="sql-keyword">CREATE TABLE</span> users (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    email VARCHAR(255) <span class="sql-keyword">UNIQUE NOT NULL</span>,
+    password_hash VARCHAR(255),
+    phone VARCHAR(20),
+    role VARCHAR(50),
+    status VARCHAR(50),
+    company_id UUID,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+<span class="sql-keyword">CREATE TABLE</span> refresh_tokens (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    user_id UUID <span class="sql-keyword">REFERENCES</span> users(id),
+    token TEXT <span class="sql-keyword">UNIQUE NOT NULL</span>,
+    expires_at TIMESTAMP,
+    revoked BOOLEAN <span class="sql-keyword">DEFAULT FALSE</span>,
+    revoked_at TIMESTAMP,
+    created_at TIMESTAMP
+);</pre>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Order Tables</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Columns</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>orders</strong></td>
+                                <td>id, order_number, user_id, company_id, cafe_id, order_type, status, subtotal, discount_amount, tax_amount, total_amount, payment_status, created_at</td>
+                                <td>Đơn hàng</td>
+                            </tr>
+                            <tr>
+                                <td><strong>order_items</strong></td>
+                                <td>id, order_id, product_id, variant_id, product_name, quantity, unit_price, line_total</td>
+                                <td>Chi tiết đơn hàng</td>
+                            </tr>
+                            <tr>
+                                <td><strong>carts</strong></td>
+                                <td>id, user_id, company_id, cafe_id, subtotal, item_count, expires_at</td>
+                                <td>Giỏ hàng</td>
+                            </tr>
+                            <tr>
+                                <td><strong>cart_items</strong></td>
+                                <td>id, cart_id, product_id, variant_id, quantity, unit_price, line_total</td>
+                                <td>Chi tiết giỏ hàng</td>
+                            </tr>
+                            <tr>
+                                <td><strong>promotions</strong></td>
+                                <td>id, code, name, discount_type, discount_value, min_order_amount, max_discount, start_date, end_date, usage_limit, used_count, status</td>
+                                <td>Mã khuyến mãi</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sql-block" style="margin-top: 1rem;">
+                    <pre><span class="sql-keyword">CREATE TABLE</span> orders (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    order_number VARCHAR(50) <span class="sql-keyword">UNIQUE NOT NULL</span>,
+    user_id UUID <span class="sql-keyword">NOT NULL</span>,
+    company_id UUID <span class="sql-keyword">NOT NULL</span>,
+    cafe_id UUID <span class="sql-keyword">NOT NULL</span>,
+    order_type VARCHAR(50),
+    status VARCHAR(50),
+    subtotal DECIMAL(10,2),
+    discount_amount DECIMAL(10,2),
+    tax_amount DECIMAL(10,2),
+    total_amount DECIMAL(10,2),
+    payment_status VARCHAR(50),
+    <span class="sql-keyword">created_at</span> TIMESTAMP
+);
+
+<span class="sql-keyword">CREATE TABLE</span> order_items (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    order_id UUID <span class="sql-keyword">REFERENCES</span> orders(id),
+    product_id UUID,
+    quantity INTEGER,
+    unit_price DECIMAL(10,2),
+    line_total DECIMAL(10,2)
+);</pre>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Payment Tables</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Columns</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>payments</strong></td>
+                                <td>id, order_id, user_id, company_id, transaction_id, payment_method, status, amount, currency, payment_url, payment_id, paid_at, expired_at, created_at</td>
+                                <td>Thanh toán</td>
+                            </tr>
+                            <tr>
+                                <td><strong>payment_transactions</strong></td>
+                                <td>id, payment_id, transaction_type, status, provider, provider_transaction_id, error_message, created_at</td>
+                                <td>Lịch sử giao dịch</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sql-block" style="margin-top: 1rem;">
+                    <pre><span class="sql-keyword">CREATE TABLE</span> payments (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    order_id UUID <span class="sql-keyword">NOT NULL</span>,
+    user_id UUID <span class="sql-keyword">NOT NULL</span>,
+    company_id UUID <span class="sql-keyword">NOT NULL</span>,
+    transaction_id VARCHAR(100) <span class="sql-keyword">UNIQUE NOT NULL</span>,
+    payment_method VARCHAR(50),
+    status VARCHAR(50),
+    amount DECIMAL(10,2),
+    currency VARCHAR(10),
+    payment_url TEXT,
+    payment_id VARCHAR(255),
+    paid_at TIMESTAMP,
+    expired_at TIMESTAMP,
+    created_at TIMESTAMP
+);
+
+<span class="sql-keyword">CREATE TABLE</span> payment_transactions (
+    id UUID <span class="sql-keyword">PRIMARY KEY</span>,
+    payment_id UUID <span class="sql-keyword">REFERENCES</span> payments(id),
+    transaction_type VARCHAR(50),
+    status VARCHAR(50),
+    provider VARCHAR(50),
+    provider_transaction_id VARCHAR(255),
+    error_message TEXT,
+    created_at TIMESTAMP
+);</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Exception Section -->
+        <section id="exception" class="section">
+            <h2 class="flow-title">Exception Handling</h2>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Exception Flow</h3>
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">throw</span>
+                            Service Layer
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-comment">// Throw ApiException in Service</span>
+<span class="code-keyword">throw new</span> <span class="code-class">ApiException</span>(
+    <span class="code-class">HttpStatus</span>.NOT_FOUND,
+    <span class="code-string">"ORDER_NOT_FOUND"</span>,
+    <span class="code-string">"Order not found"</span>
+);</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step controller" style="background: linear-gradient(135deg, var(--bg-tertiary), #3b1f1f); border-color: var(--accent-red);">
+                        <div class="step-header">
+                            <span class="step-badge">@ExceptionHandler</span>
+                            GlobalExceptionHandler
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-annotation">@ExceptionHandler</span>(<span class="code-class">ApiException</span>.<span class="code-keyword">class</span>)
+<span class="code-keyword">public</span> <span class="code-class">ResponseEntity</span>&lt;<span class="code-class">ApiResponse</span>&gt; <span class="code-method">handleApiException</span>(<span class="code-class">ApiException</span> ex) {
+    <span class="code-keyword">return</span> <span class="code-class">ResponseEntity</span>
+        .<span class="code-method">status</span>(ex.<span class="code-method">getStatus</span>())
+        .<span class="code-method">body</span>(<span class="code-class">ApiResponse</span>.<span class="code-method">error</span>(
+            ex.<span class="code-method">getCode</span>(),
+            ex.<span class="code-method">getMessage</span>()
+        ));
+}</pre>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-blue); font-size: 1.5rem;">↓</div>
+                    <div class="step client">
+                        <div class="step-header">
+                            <span class="step-badge">HTTP</span>
+                            Client Response
+                        </div>
+                        <div class="step-body">
+<pre>HTTP 404 Not Found
+{
+    "success": false,
+    "error": {
+        "code": "ORDER_NOT_FOUND",
+        "message": "Order not found"
+    }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Common Exceptions</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>HTTP Status</th>
+                                <th>Code</th>
+                                <th>Message</th>
+                                <th>Scenario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span style="color: var(--accent-red);">401</span></td>
+                                <td>INVALID_CREDENTIALS</td>
+                                <td>Invalid email or password</td>
+                                <td>Sai email/password khi login</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-red);">401</span></td>
+                                <td>TOKEN_EXPIRED</td>
+                                <td>Access token has expired</td>
+                                <td>JWT token hết hạn</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-red);">403</span></td>
+                                <td>ACCOUNT_INACTIVE</td>
+                                <td>Account is inactive</td>
+                                <td>Tài khoản bị vô hiệu hóa</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-red);">404</span></td>
+                                <td>ORDER_NOT_FOUND</td>
+                                <td>Order not found</td>
+                                <td>Đơn hàng không tồn tại</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-red);">404</span></td>
+                                <td>CART_EMPTY</td>
+                                <td>Cart is empty</td>
+                                <td>Giỏ hàng trống</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-orange);">400</span></td>
+                                <td>INVALID_PROMO</td>
+                                <td>Invalid promo code</td>
+                                <td>Mã khuyến mãi không hợp lệ</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-orange);">400</span></td>
+                                <td>PROMO_EXPIRED</td>
+                                <td>Promo code has expired</td>
+                                <td>Mã KM đã hết hạn</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-orange);">400</span></td>
+                                <td>INVALID_PAYMENT_METHOD</td>
+                                <td>Invalid payment method</td>
+                                <td>Phương thức thanh toán không hỗ trợ</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color: var(--accent-orange);">409</span></td>
+                                <td>PAYMENT_EXISTS</td>
+                                <td>Payment already exists for this order</td>
+                                <td>Đơn hàng đã có payment</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <h3 class="flow-title">Transaction Management</h3>
+                <div class="flow-row" style="flex-direction: column;">
+                    <div class="step service">
+                        <div class="step-header">
+                            <span class="step-badge">@Transactional</span>
+                            Atomic Operations
+                        </div>
+                        <div class="step-body">
+<pre><span class="code-annotation">@Transactional</span>
+<span class="code-keyword">public</span> <span class="code-class">Order</span> <span class="code-method">createOrder</span>(...) {
+    <span class="code-comment">// All operations are in ONE transaction</span>
+
+    <span class="code-class">Order</span> order = orderRepository.<span class="code-method">save</span>(order);
+    <span class="code-comment">// INSERT order</span>
+
+    cartItemRepository.<span class="code-method">deleteAllByCartId</span>(cart.<span class="code-method">getId</span>());
+    <span class="code-comment">// DELETE cart items</span>
+
+    cartRepository.<span class="code-method">delete</span>(cart);
+    <span class="code-comment">// DELETE cart</span>
+
+    <span class="code-keyword">return</span> order;
+    <span class="code-comment">// COMMIT - All or Nothing</span>
+}
+
+<span class="code-comment">// If ANY exception is thrown → ROLLBACK all changes</span></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step service" style="margin-top: 1rem;">
+                    <div class="step-header">
+                        <span class="step-badge">readOnly</span>
+                        Query Optimization
+                    </div>
+                    <div class="step-body">
+<pre><span class="code-annotation">@Transactional</span>(readOnly = <span class="code-keyword">true</span>)
+<span class="code-keyword">public</span> <span class="code-class">Order</span> <span class="code-method">getOrder</span>(<span class="code-class">UUID</span> orderId) {
+    <span class="code-comment">// Hibernate optimizations:</span>
+    <span class="code-comment">// - Skip dirty checking</span>
+    <span class="code-comment">// - Skip write locks</span>
+    <span class="code-keyword">return</span> orderRepository.<span class="code-method">findById</span>(orderId).<span class="code-method">orElseThrow</span>(...);
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <p>AI Café Platform - Code Flow Documentation</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Generated from source code analysis</p>
+    </footer>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Search functionality
+        document.querySelector('.search-input')?.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            // Filter content based on search term
+        });
+    </script>
+</body>
+</html>

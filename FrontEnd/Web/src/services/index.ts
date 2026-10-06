@@ -1,11 +1,10 @@
-// ============================================
-// Services barrel exports
-// ============================================
+// API Client
+export { apiClient, api, getErrorMessage } from './api/client';
+export type { ApiResponse } from './api/client';
 
-export * from './api/client';
-export * from './api/auth';
-export * from './api/menu';
-export * from './api/cart';
-export * from './api/order';
-export * from './api/wallet';
-export * from './hooks';
+// API Endpoints
+export * from './api/endpoints/auth';
+export * from './api/endpoints/menu';
+export * from './api/endpoints/cart';
+export * from './api/endpoints/order';
+export * from './api/endpoints/wallet';

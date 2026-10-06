@@ -3,13 +3,13 @@
 // ============================================
 
 import { useQuery } from '@tanstack/react-query';
-import * as walletApi from '../api/wallet';
+import * as walletApi from '../api/endpoints/wallet';
 import { queryKeys } from './queryClient';
 
 export function useWallet() {
   return useQuery({
     queryKey: queryKeys.wallet,
-    queryFn: walletApi.getWallet,
+    queryFn: walletApi.getWalletBalance,
   });
 }
 

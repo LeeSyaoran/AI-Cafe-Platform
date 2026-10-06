@@ -1,37 +1,37 @@
-// ============================================
-// Order API - Protected endpoints
-// ============================================
+import { api } from '../client';
+import type { ApiResponse } from '@/types';
+import type { Order } from '@/types';
 
-import { api } from './client';
-import type {
-  Order,
-  CreateOrderRequest,
-  PaginationParams,
-} from '../../types';
+// Get orders
+export async function getOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ApiResponse<Order[]>> {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.set('status', params.status);
+  if (params?.limit) queryParams.set('limit', String(params.limit));
+  if (params?.offset) queryParams.set('offset', String(params.offset));
 
-// List user's orders
-export async function listOrders(
-  params?: PaginationParams
-): Promise<{ orders: Order[]; total: number }> {
-  const searchParams = new URLSearchParams();
-  if (params?.limit) searchParams.set('limit', String(params.limit));
-  if (params?.offset) searchParams.set('offset', String(params.offset));
-
-  const query = searchParams.toString();
-  return api.get<{ orders: Order[]; total: number }>(`/v1/orders${query ? `?${query}` : ''}`, true);
+  const query = queryParams.toString();
+  return api.get<ApiResponse<Order[]>>(`/v1/orders${query ? `?${query}` : ''}`, true);
 }
 
 // Get order by ID
-export async function getOrder(id: string): Promise<Order> {
-  return api.get<Order>(`/v1/orders/${id}`, true);
+export async function getOrder(id: string): Promise<ApiResponse<Order>> {
+  return api.get<ApiResponse<Order>>(`/v1/orders/${id}`, true);
 }
 
-// Create new order (manual, not from cart)
-export async function createOrder(data: CreateOrderRequest): Promise<Order> {
-  return api.post<Order>('/v1/orders', data, true);
+// Create order
+export async function createOrder(data: {
+  order_type: 'pickup' | 'delivery' | 'dine_in';
+  payment_method?: string;
+  note?: string;
+}): Promise<ApiResponse<Order>> {
+  return api.post<ApiResponse<Order>>('/v1/orders', data, true);
 }
 
 // Cancel order
-export async function cancelOrder(id: string): Promise<Order> {
-  return api.put<Order>(`/v1/orders/${id}/cancel`, undefined, true);
+export async function cancelOrder(id: string): Promise<ApiResponse<Order>> {
+  return api.post<ApiResponse<Order>>(`/v1/orders/${id}/cancel`, undefined, true);
 }

@@ -1,55 +1,57 @@
-// ============================================
-// Auth API - OTP-based authentication
-// ============================================
-
-import { api, setTokens, clearTokens } from './client';
+import { api } from '../client';
+import type { ApiResponse } from '@/types';
 import type {
-  ApiResponse,
-  AuthTokens,
-  UserProfile,
-  OTPRequest,
-  OTPVerifyRequest,
-} from '../../types';
+  SendOTPRequest,
+  SendOTPResponse,
+  VerifyOTPRequest,
+  VerifyOTPResponse,
+  User,
+} from '@/types';
 
-// Request OTP (gửi mã về phone)
-export async function sendOTP(data: OTPRequest): Promise<void> {
-  await api.post<void>('/v1/auth/send-otp', data);
+// Send OTP
+export async function sendOTP(
+  phone: string
+): Promise<ApiResponse<SendOTPResponse>> {
+  const response = await api.post<ApiResponse<SendOTPResponse>>(
+    '/v1/auth/send-otp',
+    { phone } as SendOTPRequest
+  );
+  return response;
 }
 
-// Verify OTP và nhận tokens
-export async function verifyOTP(data: OTPVerifyRequest): Promise<AuthTokens> {
-  const tokens = await api.post<AuthTokens>('/v1/auth/verify-otp', data);
-  setTokens(tokens.accessToken, tokens.refreshToken);
-  return tokens;
+// Verify OTP
+export async function verifyOTP(
+  phone: string,
+  code: string
+): Promise<ApiResponse<VerifyOTPResponse>> {
+  const response = await api.post<ApiResponse<VerifyOTPResponse>>(
+    '/v1/auth/verify-otp',
+    { phone, code } as VerifyOTPRequest
+  );
+  return response;
+}
+
+// Get current user
+export async function getCurrentUser(): Promise<ApiResponse<User>> {
+  const response = await api.get<ApiResponse<User>>('/v1/me', true);
+  return response;
 }
 
 // Refresh token
-export async function refreshAuth(): Promise<AuthTokens> {
-  const tokens = await api.post<AuthTokens>('/v1/auth/refresh');
-  setTokens(tokens.accessToken, tokens.refreshToken);
-  return tokens;
-}
-
-// Get current user profile
-export async function getProfile(): Promise<UserProfile> {
-  return api.get<UserProfile>('/v1/me', true);
+export async function refreshToken(
+  refreshToken: string
+): Promise<ApiResponse<{ access_token: string }>> {
+  const response = await api.post<ApiResponse<{ access_token: string }>>(
+    '/v1/auth/refresh',
+    { refresh_token: refreshToken }
+  );
+  return response;
 }
 
 // Update profile
-export async function updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
-  return api.put<UserProfile>('/v1/me', data, true);
-}
-
-// Logout
-export async function logout(): Promise<void> {
-  try {
-    await api.post('/v1/auth/logout', undefined, true);
-  } finally {
-    clearTokens();
-  }
-}
-
-// Quick auth check
-export function isLoggedIn(): boolean {
-  return !!localStorage.getItem('accessToken');
+export async function updateProfile(
+  data: Partial<User>
+): Promise<ApiResponse<User>> {
+  const response = await api.put<ApiResponse<User>>('/v1/me', data, true);
+  return response;
 }

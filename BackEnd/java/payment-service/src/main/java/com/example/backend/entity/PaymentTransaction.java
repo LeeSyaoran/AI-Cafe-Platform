@@ -10,8 +10,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment_transactions", indexes = {
-    @Index(name = "idx_payment_tx_payment_id", columnList = "payment_id"),
-    @Index(name = "idx_payment_tx_type", columnList = "transaction_type")
+    @Index(name = "idx_payment_txn_payment_id", columnList = "payment_id"),
+    @Index(name = "idx_payment_txn_type", columnList = "type"),
+    @Index(name = "idx_payment_txn_status", columnList = "status")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -28,28 +29,21 @@ public class PaymentTransaction {
     @Column(name = "payment_id", nullable = false)
     private UUID paymentId;
 
-    @Column(name = "transaction_type", nullable = false)
-    private String transactionType; // CREATE, CALLBACK, REFUND, CANCEL
+    @Column(nullable = false)
+    private String type; // create, callback, refund
 
     @Column(nullable = false)
-    private String status; // SUCCESS, FAILED
+    private String status; // success, failed, pending
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "request_data", columnDefinition = "TEXT")
     private String requestData;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "response_data", columnDefinition = "TEXT")
     private String responseData;
 
-    @Column
-    private String provider; // VNPAY, MOMO, ZALOPAY
-
-    @Column(name = "provider_transaction_id")
-    private String providerTransactionId;
-
-    @Column
     private String errorCode;
 
-    @Column
+    @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
     @CreatedDate

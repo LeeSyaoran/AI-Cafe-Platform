@@ -77,11 +77,14 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUser(UUID id, String fullName, String phone, String dateOfBirth, String gender) {
+    public User updateUser(UUID id, String fullName, String displayName, String phone, String dateOfBirth, String gender) {
         User user = getUserByIdWithProfile(id);
 
         if (fullName != null) {
             user.getProfile().setFullName(fullName);
+        }
+        if (displayName != null) {
+            user.getProfile().setDisplayName(displayName);
         }
         if (phone != null) {
             user.setPhone(phone);

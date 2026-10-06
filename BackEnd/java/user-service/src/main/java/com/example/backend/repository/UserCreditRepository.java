@@ -14,13 +14,13 @@ public interface UserCreditRepository extends JpaRepository<UserCredit, UUID> {
 
     Optional<UserCredit> findByUserId(UUID userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserCredit c SET c.balance = c.balance + :amount, " +
            "c.lifetimeEarned = c.lifetimeEarned + :amount, " +
            "c.lastTransactionAt = CURRENT_TIMESTAMP WHERE c.userId = :userId")
     int addCredits(UUID userId, Double amount);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserCredit c SET c.balance = c.balance - :amount, " +
            "c.lifetimeUsed = c.lifetimeUsed + :amount, " +
            "c.lastTransactionAt = CURRENT_TIMESTAMP WHERE c.userId = :userId AND c.balance >= :amount")
