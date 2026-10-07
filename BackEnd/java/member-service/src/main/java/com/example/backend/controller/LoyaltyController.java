@@ -49,7 +49,7 @@ public class LoyaltyController {
         );
 
         return ResponseEntity.ok(ApiResponse.ok(new RedemptionResponse(
-                account.getPointsBalance(),
+                account.getPoints() != null ? account.getPoints().longValue() : 0L,
                 "Reward redeemed successfully"
         )));
     }
@@ -74,8 +74,8 @@ public class LoyaltyController {
     private LoyaltyAccountResponse toAccountResponse(LoyaltyAccount account) {
         return LoyaltyAccountResponse.builder()
                 .tier(account.getTier())
-                .pointsBalance(account.getPointsBalance())
-                .pointsLifetime(account.getPointsLifetime())
+                .pointsBalance(account.getPoints() != null ? account.getPoints().longValue() : 0L)
+                .pointsLifetime(account.getLifetimePoints() != null ? account.getLifetimePoints().longValue() : 0L)
                 .totalOrders(account.getTotalOrders())
                 .totalSpent(account.getTotalSpent())
                 .tierExpiresAt(account.getTierExpiresAt())
@@ -85,13 +85,13 @@ public class LoyaltyController {
     private RewardResponse toRewardResponse(Reward reward) {
         return RewardResponse.builder()
                 .id(reward.getId())
-                .code(reward.getCode())
+                .code(reward.getName()) // Use name as code if needed
                 .name(reward.getName())
                 .description(reward.getDescription())
-                .rewardType(reward.getRewardType())
-                .discountValue(reward.getDiscountValue())
-                .pointsCost(reward.getPointsCost())
-                .validityDays(reward.getValidityDays())
+                .rewardType(reward.getCategory())
+                .discountValue(null) // Not in entity
+                .pointsCost(reward.getPointsRequired())
+                .validityDays(null) // Not in entity
                 .build();
     }
 
@@ -99,9 +99,9 @@ public class LoyaltyController {
         return TransactionResponse.builder()
                 .id(tx.getId())
                 .type(tx.getType())
-                .points(tx.getPoints())
+                .points(tx.getPoints() != null ? tx.getPoints().longValue() : 0L)
                 .description(tx.getDescription())
-                .status(tx.getStatus())
+                .status(tx.getType()) // Use type as status
                 .createdAt(tx.getCreatedAt())
                 .build();
     }
@@ -110,10 +110,10 @@ public class LoyaltyController {
         return RewardRedemptionResponse.builder()
                 .id(r.getId())
                 .rewardId(r.getRewardId())
-                .pointsSpent(r.getPointsSpent())
+                .pointsSpent(r.getPointsSpent() != null ? r.getPointsSpent().longValue() : 0L)
                 .status(r.getStatus())
-                .redeemedAt(r.getRedeemedAt())
-                .expiresAt(r.getExpiresAt())
+                .redeemedAt(r.getUsedAt())
+                .expiresAt(r.getExpiredAt())
                 .build();
     }
 

@@ -1,0 +1,10 @@
+com\example\backend\config\MailConfig$MockJavaMailSender.class
+com\example\backend\controller\NotificationController$RegisterDeviceRequest.class
+com\example\backend\NotificationServiceApplication.class
+com\example\backend\service\PushNotificationService.class
+com\example\backend\service\SmsService.class
+com\example\backend\service\NotificationService.class
+com\example\backend\config\MailConfig.class
+com\example\backend\config\MailConfig$MockMimeMessage.class
+com\example\backend\controller\NotificationController.class
+com\example\backend\service\EmailService.class

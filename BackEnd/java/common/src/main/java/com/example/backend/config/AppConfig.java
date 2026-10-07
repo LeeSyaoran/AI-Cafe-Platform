@@ -2,27 +2,18 @@ package com.example.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.AuditorAware;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.UUID;
 import java.util.concurrent.Executor;
 
 @Configuration
-@EnableJpaAuditing
 @EnableAsync
 @EnableScheduling
 public class AppConfig {
-
-    @Bean
-    public AuditorAware<UUID> auditorProvider() {
-        return () -> java.util.Optional.empty();
-    }
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {

@@ -30,7 +30,7 @@ public class PaymentService {
         // Check if payment already exists for this order
         paymentRepository.findByOrderId(orderId).ifPresent(existing -> {
             if ("pending".equals(existing.getStatus()) || "processing".equals(existing.getStatus())) {
-                throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_EXISTS", "Payment already exists for this order");
+                throw new ApiException(HttpStatus.CONFLICT.value(), "PAYMENT_EXISTS", "Payment already exists for this order");
             }
         });
 
@@ -53,7 +53,7 @@ public class PaymentService {
             case "VNPAY" -> vnPayService.createPaymentUrl(payment);
             case "MOMO" -> moMoService.createPaymentUrl(payment);
             case "ZALOPAY" -> zaloPayService.createPaymentUrl(payment);
-            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_METHOD", "Invalid payment method");
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_METHOD", "Invalid payment method");
         };
 
         payment.setPaymentUrl(paymentUrl);
@@ -74,7 +74,7 @@ public class PaymentService {
             case "VNPAY" -> vnPayService.verifyCallback(data);
             case "MOMO" -> moMoService.verifyCallback(data);
             case "ZALOPAY" -> zaloPayService.verifyCallback(data);
-            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_METHOD", "Invalid payment method");
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_METHOD", "Invalid payment method");
         };
 
         paymentRepository.save(payment);
@@ -87,13 +87,13 @@ public class PaymentService {
     @Transactional
     public Payment getPayment(UUID paymentId) {
         return paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "PAYMENT_NOT_FOUND", "Payment not found"));
     }
 
     @Transactional(readOnly = true)
     public Payment getPaymentByOrder(UUID orderId) {
         return paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment not found for this order"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "PAYMENT_NOT_FOUND", "Payment not found for this order"));
     }
 
     @Transactional
@@ -101,7 +101,7 @@ public class PaymentService {
         Payment payment = getPayment(paymentId);
 
         if (!"pending".equals(payment.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CANCEL", "Only pending payments can be cancelled");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "CANNOT_CANCEL", "Only pending payments can be cancelled");
         }
 
         payment.setStatus("cancelled");
@@ -130,7 +130,7 @@ public class PaymentService {
                                 String providerTxId, String error) {
         PaymentTransaction tx = PaymentTransaction.builder()
                 .paymentId(paymentId)
-                .transactionType(type)
+                .type(type)
                 .status(status)
                 .provider(provider)
                 .providerTransactionId(providerTxId)

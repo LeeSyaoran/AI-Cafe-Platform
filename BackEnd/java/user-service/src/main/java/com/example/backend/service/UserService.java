@@ -25,31 +25,31 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getUserById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "USER_NOT_FOUND", "User not found"));
     }
 
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "USER_NOT_FOUND", "User not found"));
     }
 
     @Transactional(readOnly = true)
     public User getUserByIdWithProfile(UUID id) {
         return userRepository.findByIdWithProfile(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "USER_NOT_FOUND", "User not found"));
     }
 
     @Transactional
     public User createUser(String email, String password, String phone, String role) {
         // Check if email already exists
         if (userRepository.existsByEmail(email)) {
-            throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email already registered");
+            throw new ApiException(HttpStatus.CONFLICT.value(), "EMAIL_EXISTS", "Email already registered");
         }
 
         // Check if phone already exists
         if (phone != null && userRepository.existsByPhone(phone)) {
-            throw new ApiException(HttpStatus.CONFLICT, "PHONE_EXISTS", "Phone already registered");
+            throw new ApiException(HttpStatus.CONFLICT.value(), "PHONE_EXISTS", "Phone already registered");
         }
 
         // Create user
@@ -104,7 +104,7 @@ public class UserService {
         User user = getUserById(id);
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD", "Current password is incorrect");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_PASSWORD", "Current password is incorrect");
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));

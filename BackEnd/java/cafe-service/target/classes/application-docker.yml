@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: cafe-service
+  main:
+    allow-bean-definition-overriding: true
+  data:
+    redis:
+      host: redis
+      port: 6379
+  datasource:
+    url: jdbc:postgresql://postgres:5432/aicafe_cafe
+    username: aicafe
+    password: aicafe_secret_2024
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+server:
+  port: 3010
+
+app:
+  jwt:
+    secret: aicafe-super-secret-jwt-key-for-authentication-2024-must-be-long-enough

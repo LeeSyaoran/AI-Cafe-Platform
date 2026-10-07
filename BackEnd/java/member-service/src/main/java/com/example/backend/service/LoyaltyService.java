@@ -27,10 +27,10 @@ public class LoyaltyService {
     private static final int POINTS_PER_VND = 1000;
 
     // Tier thresholds (lifetime points)
-    private static final long BRONZE_THRESHOLD = 0;
-    private static final long SILVER_THRESHOLD = 100000;
-    private static final long GOLD_THRESHOLD = 500000;
-    private static final long PLATINUM_THRESHOLD = 1000000;
+    private static final int BRONZE_THRESHOLD = 0;
+    private static final int SILVER_THRESHOLD = 100000;
+    private static final int GOLD_THRESHOLD = 500000;
+    private static final int PLATINUM_THRESHOLD = 1000000;
 
     @Transactional(readOnly = true)
     public LoyaltyAccount getAccount(UUID userId) {
@@ -49,18 +49,17 @@ public class LoyaltyService {
         LoyaltyAccount account = getAccount(userId);
 
         // Calculate points
-        long points = (long) (orderAmount / POINTS_PER_VND);
+        int points = (int) (orderAmount / POINTS_PER_VND);
 
         // Apply tier bonus
         double tierMultiplier = getTierMultiplier(account.getTier());
-        points = (long) (points * tierMultiplier);
+        points = (int) (points * tierMultiplier);
 
         // Update account
-        account.setPointsBalance(account.getPointsBalance() + points);
-        account.setPointsLifetime(account.getPointsLifetime() + points);
+        account.setPoints(account.getPoints() + points);
+        account.setLifetimePoints(account.getLifetimePoints() + points);
         account.setTotalOrders(account.getTotalOrders() + 1);
         account.setTotalSpent(account.getTotalSpent() + orderAmount);
-        account.setLastEarnAt(Instant.now());
 
         // Check for tier upgrade
         updateTier(account);
@@ -70,9 +69,11 @@ public class LoyaltyService {
         // Log transaction
         LoyaltyTransaction transaction = LoyaltyTransaction.builder()
                 .userId(userId)
+                .companyId(account.getCompanyId())
                 .type("earn")
                 .points(points)
                 .orderId(orderId)
+                .balanceAfter(account.getPoints())
                 .description("Earned from order")
                 .build();
         transactionRepository.save(transaction);
@@ -85,53 +86,53 @@ public class LoyaltyService {
     public LoyaltyAccount redeemPoints(UUID userId, UUID rewardId, UUID orderId) {
         LoyaltyAccount account = getAccount(userId);
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "REWARD_NOT_FOUND", "Reward not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "REWARD_NOT_FOUND", "Reward not found"));
 
-        // Check tier access
-        if (!reward.getApplicableTiers().contains(account.getTier())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "TIER_REQUIRED", "Your tier does not allow this reward");
+        // Check tier access - simplified check
+        if (reward.getMinTier() != null && getTierLevel(reward.getMinTier()) > getTierLevel(account.getTier())) {
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "TIER_REQUIRED", "Your tier does not allow this reward");
         }
 
         // Check points
-        if (account.getPointsBalance() < reward.getPointsCost()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INSUFFICIENT_POINTS", "Not enough points");
+        if (account.getPoints() < reward.getPointsRequired()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INSUFFICIENT_POINTS", "Not enough points");
         }
 
         // Check availability
-        if (reward.getQuantityRemaining() != null && reward.getQuantityRemaining() <= 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "REWARD_EXHAUSTED", "Reward is no longer available");
+        if (reward.getRemainingQuantity() != null && reward.getRemainingQuantity() <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "REWARD_EXHAUSTED", "Reward is no longer available");
         }
 
         // Deduct points
-        account.setPointsBalance(account.getPointsBalance() - reward.getPointsCost());
-        account.setPointsUsed(account.getPointsUsed() + reward.getPointsCost());
-        account.setLastRedeemAt(Instant.now());
+        account.setPoints(account.getPoints() - reward.getPointsRequired());
         accountRepository.save(account);
 
         // Create redemption
         RewardRedemption redemption = RewardRedemption.builder()
                 .userId(userId)
+                .companyId(account.getCompanyId())
                 .rewardId(rewardId)
-                .pointsSpent((long) reward.getPointsCost())
+                .pointsSpent(reward.getPointsRequired() != null ? reward.getPointsRequired() : 0)
                 .orderId(orderId)
                 .status("active")
-                .redeemedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(reward.getValidityDays() * 24L * 60 * 60))
+                .validFrom(Instant.now())
                 .build();
         redemptionRepository.save(redemption);
 
         // Log transaction
         LoyaltyTransaction transaction = LoyaltyTransaction.builder()
                 .userId(userId)
+                .companyId(account.getCompanyId())
                 .type("redeem")
-                .points(-(long) reward.getPointsCost())
+                .points(-reward.getPointsRequired())
                 .rewardId(rewardId)
                 .orderId(orderId)
+                .balanceAfter(account.getPoints())
                 .description("Redeemed: " + reward.getName())
                 .build();
         transactionRepository.save(transaction);
 
-        log.info("User {} redeemed {} points for reward {}", userId, reward.getPointsCost(), rewardId);
+        log.info("User {} redeemed {} points for reward {}", userId, reward.getPointsRequired(), rewardId);
         return account;
     }
 
@@ -142,16 +143,23 @@ public class LoyaltyService {
 
         List<Reward> rewards = rewardRepository.findActiveRewards(now);
 
-        // Filter by tier
+        // Filter by tier and availability
+        final String accountTier = account.getTier();
+        final int accountTierLevel = getTierLevel(accountTier);
+
         return rewards.stream()
-                .filter(r -> r.getApplicableTiers().contains(account.getTier()))
-                .filter(r -> r.getQuantityRemaining() == null || r.getQuantityRemaining() > 0)
+                .filter(r -> {
+                    if (r.getMinTier() == null) return true;
+                    return getTierLevel(r.getMinTier()) <= accountTierLevel;
+                })
+                .filter(r -> r.getRemainingQuantity() == null || r.getRemainingQuantity() > 0)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<LoyaltyTransaction> getTransactionHistory(UUID userId, int limit) {
-        return transactionRepository.findByUserIdOrderByCreatedAtDesc(userId, limit);
+        return transactionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream().limit(limit).toList();
     }
 
     @Transactional(readOnly = true)
@@ -168,9 +176,18 @@ public class LoyaltyService {
         };
     }
 
+    private int getTierLevel(String tier) {
+        return switch (tier) {
+            case "platinum" -> 4;
+            case "gold" -> 3;
+            case "silver" -> 2;
+            default -> 1;
+        };
+    }
+
     private void updateTier(LoyaltyAccount account) {
         String newTier;
-        long lifetime = account.getPointsLifetime();
+        int lifetime = account.getLifetimePoints() != null ? account.getLifetimePoints() : 0;
 
         if (lifetime >= PLATINUM_THRESHOLD) {
             newTier = "platinum";

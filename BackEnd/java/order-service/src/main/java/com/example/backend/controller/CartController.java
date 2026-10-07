@@ -52,8 +52,8 @@ public class CartController {
                 request.getProductId(),
                 request.getVariantId(),
                 request.getQuantity(),
-                request.getOptionsJson(),
-                request.getModifiersJson(),
+                request.getOptions(),
+                request.getModifiers(),
                 request.getNotes()
         );
 
@@ -69,29 +69,29 @@ public class CartController {
 
         CartItem item = cartService.updateItem(userId, id, request.getQuantity(), request.getNotes());
         if (item == null) {
-            return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("message", "Item removed from cart")));
+            return ResponseEntity.ok(ApiResponse.<CartItemResponse>ok((CartItemResponse) null));
         }
         return ResponseEntity.ok(ApiResponse.ok(toItemResponse(item)));
     }
 
     // DELETE /v1/cart/items/:id
     @DeleteMapping("/cart/items/{id}")
-    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> removeItem(
+    public ResponseEntity<ApiResponse<String>> removeItem(
             @PathVariable UUID id,
             @RequestHeader("X-User-ID") UUID userId) {
 
         cartService.removeItem(userId, id);
-        return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("message", "Item removed")));
+        return ResponseEntity.ok(ApiResponse.ok("Item removed"));
     }
 
     // DELETE /v1/cart
     @DeleteMapping("/cart")
-    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> clearCart(
+    public ResponseEntity<ApiResponse<String>> clearCart(
             @RequestHeader("X-User-ID") UUID userId,
             @RequestParam UUID cafeId) {
 
         cartService.clearCart(userId, cafeId);
-        return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("message", "Cart cleared")));
+        return ResponseEntity.ok(ApiResponse.ok("Cart cleared"));
     }
 
     private CartResponse toResponse(Cart cart, List<CartItem> items) {

@@ -29,13 +29,13 @@ public class SubscriptionService {
 
     @Transactional(readOnly = true)
     public List<MembershipPlan> getActivePlans() {
-        return planRepository.findByStatus("active");
+        return planRepository.findByStatusOrderBySortOrder("active");
     }
 
     @Transactional(readOnly = true)
     public MembershipPlan getPlan(UUID planId) {
         return planRepository.findById(planId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PLAN_NOT_FOUND", "Plan not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "PLAN_NOT_FOUND", "Plan not found"));
     }
 
     @Transactional(readOnly = true)
@@ -49,7 +49,7 @@ public class SubscriptionService {
         // Check if user already has subscription
         subscriptionRepository.findByUserIdWithPlan(userId).ifPresent(existing -> {
             if ("active".equals(existing.getStatus()) || "trial".equals(existing.getStatus())) {
-                throw new ApiException(HttpStatus.CONFLICT, "ALREADY_SUBSCRIBED", "User already has an active subscription");
+                throw new ApiException(HttpStatus.CONFLICT.value(), "ALREADY_SUBSCRIBED", "User already has an active subscription");
             }
         });
 
@@ -89,7 +89,7 @@ public class SubscriptionService {
     public Subscription cancelSubscription(UUID userId, String reason) {
         Subscription subscription = getUserSubscription(userId);
         if (subscription == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "NO_SUBSCRIPTION", "No active subscription found");
+            throw new ApiException(HttpStatus.NOT_FOUND.value(), "NO_SUBSCRIPTION", "No active subscription found");
         }
 
         subscription.setStatus("cancelled");
@@ -105,7 +105,7 @@ public class SubscriptionService {
     public Subscription pauseSubscription(UUID userId) {
         Subscription subscription = getUserSubscription(userId);
         if (subscription == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "NO_SUBSCRIPTION", "No active subscription found");
+            throw new ApiException(HttpStatus.NOT_FOUND.value(), "NO_SUBSCRIPTION", "No active subscription found");
         }
 
         subscription.setStatus("paused");
@@ -116,7 +116,7 @@ public class SubscriptionService {
     public Subscription resumeSubscription(UUID userId) {
         Subscription subscription = getUserSubscription(userId);
         if (subscription == null || !"paused".equals(subscription.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "NOT_PAUSED", "Subscription is not paused");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "NOT_PAUSED", "Subscription is not paused");
         }
 
         subscription.setStatus("active");
@@ -142,7 +142,7 @@ public class SubscriptionService {
     @Transactional
     public void renewSubscription(UUID subscriptionId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SUBSCRIPTION_NOT_FOUND", "Subscription not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "SUBSCRIPTION_NOT_FOUND", "Subscription not found"));
 
         MembershipPlan plan = subscription.getPlan();
         Instant now = Instant.now();

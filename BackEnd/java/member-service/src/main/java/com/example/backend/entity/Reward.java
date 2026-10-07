@@ -33,6 +33,9 @@ public class Reward {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
+    private String code;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

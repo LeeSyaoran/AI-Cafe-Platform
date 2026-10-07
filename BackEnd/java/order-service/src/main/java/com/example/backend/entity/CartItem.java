@@ -28,8 +28,15 @@ public class CartItem {
     @Column(name = "cart_id", nullable = false)
     private UUID cartId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", insertable = false, updatable = false)
+    private Cart cart;
+
     @Column(name = "product_id", nullable = false)
     private UUID productId;
+
+    @Column(name = "product_name")
+    private String productName;
 
     @Column(name = "variant_id")
     private UUID variantId;

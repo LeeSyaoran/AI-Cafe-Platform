@@ -23,19 +23,23 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     Page<Order> findByCompanyIdAndStatus(UUID companyId, String status, Pageable pageable);
 
-    Optional<Order> findByIdWithItems(UUID id);
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id")
+    Optional<Order> findByIdWithItems(@Param("id") UUID id);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.createdAt >= :startDate")
-    long countOrdersInPeriod(@Param("companyId") UUID companyId, @Param("startDate") Instant startDate);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.createdAt >= :startDate")
+    long countOrdersInPeriod(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("startDate") Instant startDate);
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.companyId = :companyId AND o.createdAt >= :startDate AND o.status = 'completed'")
-    double sumRevenueInPeriod(@Param("companyId") UUID companyId, @Param("startDate") Instant startDate);
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.createdAt >= :startDate AND o.status = 'completed'")
+    double sumRevenueInPeriod(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("startDate") Instant startDate);
 
-    @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.createdAt >= :startDate GROUP BY o.status")
-    List<Object[]> countOrdersByStatus(@Param("companyId") UUID companyId, @Param("startDate") Instant startDate);
+    @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.createdAt >= :startDate GROUP BY o.status")
+    List<Object[]> countOrdersByStatus(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("startDate") Instant startDate);
 
-    @Query("SELECT oi.productId, SUM(oi.quantity) as totalQty, SUM(oi.lineTotal) as totalAmount " +
-           "FROM OrderItem oi WHERE oi.order.companyId = :companyId " +
+    @Query("SELECT oi.productId, SUM(oi.quantity) as totalQty, SUM(oi.price * oi.quantity) as totalAmount " +
+           "FROM OrderItem oi JOIN oi.order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId " +
            "GROUP BY oi.productId ORDER BY totalQty DESC")
-    List<Object[]> findTopProducts(@Param("companyId") UUID companyId, Pageable pageable);
+    List<Object[]> findTopProducts(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.status = :status")
+    long countByStatus(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("status") String status);
 }

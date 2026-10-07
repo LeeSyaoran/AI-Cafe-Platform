@@ -15,6 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
-    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
-    long countNewCustomersInPeriod(@Param("startDate") Instant startDate);
+    @Query("SELECT COUNT(u) FROM User u WHERE u.companyId = :companyId AND u.createdAt >= :startDate")
+    long countNewCustomersInPeriod(@Param("companyId") UUID companyId, @Param("startDate") Instant startDate);
 }

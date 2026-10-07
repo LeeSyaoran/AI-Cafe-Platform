@@ -32,10 +32,10 @@ public class OrderService {
                             UUID deliveryAddressId, String customerNote, String promoCode) {
         // Get user's cart
         Cart cart = cartRepository.findByUserIdAndCafeId(userId, cafeId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CART_EMPTY", "Cart is empty"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "CART_EMPTY", "Cart is empty"));
 
         if (cart.getItems().isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CART_EMPTY", "Cart is empty");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "CART_EMPTY", "Cart is empty");
         }
 
         // Generate order number
@@ -101,25 +101,25 @@ public class OrderService {
     @Transactional
     public Order getOrder(UUID orderId) {
         return orderRepository.findByIdWithItems(orderId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "ORDER_NOT_FOUND", "Order not found"));
     }
 
     @Transactional(readOnly = true)
     public Order getOrderByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "ORDER_NOT_FOUND", "Order not found"));
     }
 
     @Transactional(readOnly = true)
     public List<Order> getUserOrders(UUID userId, int page, int size) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId, page, size);
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId, org.springframework.data.domain.PageRequest.of(page, size));
     }
 
     @Transactional
     public Order confirmOrder(UUID orderId) {
         Order order = getOrder(orderId);
         if (!"pending".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_STATUS", "Order cannot be confirmed");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_STATUS", "Order cannot be confirmed");
         }
 
         order.setStatus("confirmed");
@@ -131,7 +131,7 @@ public class OrderService {
     public Order startPreparing(UUID orderId) {
         Order order = getOrder(orderId);
         if (!"confirmed".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_STATUS", "Order cannot be prepared");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_STATUS", "Order cannot be prepared");
         }
 
         order.setStatus("preparing");
@@ -143,7 +143,7 @@ public class OrderService {
     public Order markReady(UUID orderId) {
         Order order = getOrder(orderId);
         if (!"preparing".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_STATUS", "Order is not being prepared");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_STATUS", "Order is not being prepared");
         }
 
         order.setStatus("ready");
@@ -155,7 +155,7 @@ public class OrderService {
     public Order completeOrder(UUID orderId) {
         Order order = getOrder(orderId);
         if (!"ready".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_STATUS", "Order cannot be completed");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_STATUS", "Order cannot be completed");
         }
 
         order.setStatus("completed");
@@ -168,7 +168,7 @@ public class OrderService {
         Order order = getOrder(orderId);
 
         if ("completed".equals(order.getStatus()) || "cancelled".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CANCEL", "Order cannot be cancelled");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "CANNOT_CANCEL", "Order cannot be cancelled");
         }
 
         // Only allow cancellation within 5 minutes for pending orders
@@ -177,7 +177,7 @@ public class OrderService {
             order.setCancellationReason(reason);
             order.setCancelledAt(Instant.now());
         } else {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "TOO_LATE", "Order cannot be cancelled at this stage");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "TOO_LATE", "Order cannot be cancelled at this stage");
         }
 
         return orderRepository.save(order);
@@ -205,24 +205,24 @@ public class OrderService {
 
     private double applyPromotion(Cart cart, String promoCode) {
         Promotion promo = promotionRepository.findByCode(promoCode)
-                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PROMO", "Invalid promotion code"));
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_PROMO", "Invalid promotion code"));
 
         // Check validity
         Instant now = Instant.now();
         if (promo.getStartDate() != null && now.isBefore(promo.getStartDate())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "PROMO_NOT_STARTED", "Promotion has not started");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "PROMO_NOT_STARTED", "Promotion has not started");
         }
         if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "PROMO_EXPIRED", "Promotion has expired");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "PROMO_EXPIRED", "Promotion has expired");
         }
         if (promo.getUsageLimit() != null && promo.getUsedCount() >= promo.getUsageLimit()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "PROMO_LIMIT_REACHED", "Promotion usage limit reached");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "PROMO_LIMIT_REACHED", "Promotion usage limit reached");
         }
 
         // Calculate discount
         double subtotal = cart.getSubtotal();
         if (subtotal < (promo.getMinOrderAmount() != null ? promo.getMinOrderAmount() : 0)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "MIN_ORDER_NOT_MET", "Minimum order amount not met");
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "MIN_ORDER_NOT_MET", "Minimum order amount not met");
         }
 
         double discount;

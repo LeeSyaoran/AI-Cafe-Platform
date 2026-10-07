@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://postgres:5432/aicafe
+    username: aicafe
+    password: aicafe_secret_2024
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  main:
+    allow-bean-definition-overriding: true
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+server:
+  port: 3005
+
+app:
+  jwt:
+    secret: aicafe-super-secret-jwt-key-for-authentication-2024-must-be-long-enough
+
+payment:
+  momo:
+    partner-code: MOMO_PARTNER_CODE
+    access-key: MOMO_ACCESS_KEY
+    secret-key: MOMO_SECRET_KEY
+    api-url: https://test-payment.momo.vn
+    return-url: http://localhost:3000/payment/momo/return
+  vnpay:
+    tmn-code: VNPAY_TMN_CODE
+    hash-secret: VNPAY_HASH_SECRET
+    api-url: https://sandbox.vnpayment.vn
+    return-url: http://localhost:3000/payment/vnpay/return
+  zalopay:
+    app-id: ZALOPAY_APP_ID
+    key1: ZALOPAY_KEY1
+    key2: ZALOPAY_KEY2
+    api-url: https://sandbox.zalopay.vn
+    return-url: http://localhost:3000/payment/zalopay/return

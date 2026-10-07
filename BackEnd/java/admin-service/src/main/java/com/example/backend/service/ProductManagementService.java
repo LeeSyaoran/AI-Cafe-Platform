@@ -32,7 +32,7 @@ public class ProductManagementService {
     @Transactional
     public Product updateProduct(UUID productId, Product updates) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Product not found"));
 
         if (updates.getName() != null) product.setName(updates.getName());
         if (updates.getDescription() != null) product.setDescription(updates.getDescription());
@@ -50,7 +50,7 @@ public class ProductManagementService {
     @Transactional
     public void deleteProduct(UUID productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Product not found"));
         product.setIsActive(false);
         productRepository.save(product);
     }
@@ -73,7 +73,7 @@ public class ProductManagementService {
     @Transactional
     public Category updateCategory(UUID categoryId, Category updates) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Category not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Category not found"));
 
         if (updates.getName() != null) category.setName(updates.getName());
         if (updates.getIcon() != null) category.setIcon(updates.getIcon());
@@ -87,7 +87,7 @@ public class ProductManagementService {
     @Transactional
     public void deleteCategory(UUID categoryId) {
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Category not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Category not found"));
         category.setIsActive(false);
         categoryRepository.save(category);
     }
@@ -107,7 +107,7 @@ public class ProductManagementService {
     @Transactional
     public Promotion updatePromotion(UUID promotionId, Promotion updates) {
         Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Promotion not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Promotion not found"));
 
         if (updates.getName() != null) promotion.setName(updates.getName());
         if (updates.getDiscountType() != null) promotion.setDiscountType(updates.getDiscountType());
@@ -123,7 +123,7 @@ public class ProductManagementService {
     @Transactional
     public void deletePromotion(UUID promotionId) {
         Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Promotion not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Promotion not found"));
         promotion.setStatus("inactive");
         promotionRepository.save(promotion);
     }
@@ -146,7 +146,7 @@ public class ProductManagementService {
     @Transactional
     public Reward updateReward(UUID rewardId, Reward updates) {
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Reward not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Reward not found"));
 
         if (updates.getName() != null) reward.setName(updates.getName());
         if (updates.getDiscountType() != null) reward.setDiscountType(updates.getDiscountType());

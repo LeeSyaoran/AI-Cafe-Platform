@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Cafe Platform - API Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #2c3e50; text-align: center; }
+        h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px; }
+        h3 { color: #555; margin-top: 20px; }
+        .url {
+            background: #2c3e50;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .method { font-weight: bold; margin-right: 10px; }
+        .post { color: #27ae60; }
+        .get { color: #3498db; }
+        .put { color: #f39c12; }
+        .delete { color: #e74c3c; }
+        .body-json {
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            overflow-x: auto;
+            border-radius: 3px;
+        }
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .api-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .description { color: #666; margin: 5px 0; }
+        .divider { border-top: 1px solid #ddd; margin: 20px 0; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #34495e; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>☕ AI CAFE PLATFORM - API DOCUMENTATION</h1>
+    <p><strong>Base URL:</strong> <code>https://api-staging.aicafe.vn/api</code></p>
+    <p><strong>Production:</strong> <code>https://api.aicafe.vn/api</code></p>
+    <p><strong>Local:</strong> <code>http://localhost:3000/api</code></p>
+</div>
+
+<!-- 1. AUTHENTICATION -->
+<div class="api-section">
+    <h2>1. AUTHENTICATION</h2>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/send-otp</span></h3>
+    <p class="description">Send OTP to phone or email</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "email": "test@example.com",
+    "phone": "0909123456",
+    "type": "register"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/verify-otp</span></h3>
+    <p class="description">Verify OTP and get tokens</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "email": "test@example.com",
+    "phone": "0909123456",
+    "otp": "123456"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/register</span></h3>
+    <p class="description">Register new user account</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "email": "test@example.com",
+    "password": "password123",
+    "phone": "0909123456"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/login</span></h3>
+    <p class="description">Login with email and password</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "email": "test@example.com",
+    "password": "password123"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/refresh</span></h3>
+    <p class="description">Refresh access token</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "refreshToken": "{{refreshToken}}"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/auth/logout</span></h3>
+    <p class="description">Logout and invalidate token</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "refreshToken": "{{refreshToken}}"
+}</div>
+</div>
+
+<!-- 2. USER PROFILE -->
+<div class="api-section">
+    <h2>2. USER PROFILE</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/me</span></h3>
+    <p class="description">Get current user profile</p>
+    <p><strong>Headers:</strong></p>
+    <div class="body-json">Authorization: Bearer {{accessToken}}
+X-User-ID: {{userId}}</div>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/me</span></h3>
+    <p class="description">Update current user profile</p>
+    <p><strong>Headers:</strong></p>
+    <div class="body-json">Authorization: Bearer {{accessToken}}
+X-User-ID: {{userId}}</div>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "fullName": "Nguyen Van Test",
+    "displayName": "TestUser",
+    "dateOfBirth": "1990-01-15",
+    "gender": "male"
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/users/{id}</span></h3>
+    <p class="description">Get user by ID</p>
+</div>
+</div>
+
+<!-- 3. CART -->
+<div class="api-section">
+    <h2>3. CART</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/cart?cafeId={UUID}</span></h3>
+    <p class="description">Get user cart for a cafe</p>
+    <p><strong>Headers:</strong></p>
+    <div class="body-json">Authorization: Bearer {{accessToken}}
+X-User-ID: {{userId}}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/cart/items</span></h3>
+    <p class="description">Add item to cart</p>
+    <p><strong>Headers:</strong></p>
+    <div class="body-json">Authorization: Bearer {{accessToken}}
+X-User-ID: {{userId}}</div>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "cafeId": "REPLACE_WITH_CAFE_ID",
+    "productId": "REPLACE_WITH_PRODUCT_ID",
+    "variantId": null,
+    "quantity": 1,
+    "options": {},
+    "modifiers": [],
+    "notes": ""
+}</div>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/cart/items/{id}</span></h3>
+    <p class="description">Update cart item</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "quantity": 2,
+    "notes": "Extra ice"
+}</div>
+
+    <h3><span class="method delete">DELETE</span><span class="url">/v1/cart/items/{id}</span></h3>
+    <p class="description">Remove item from cart</p>
+
+    <h3><span class="method delete">DELETE</span><span class="url">/v1/cart?cafeId={UUID}</span></h3>
+    <p class="description">Clear all items from cart</p>
+</div>
+
+<!-- 4. ORDERS -->
+<div class="api-section">
+    <h2>4. ORDERS</h2>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/orders</span></h3>
+    <p class="description">Create new order from cart</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "companyId": "REPLACE_WITH_COMPANY_ID",
+    "cafeId": "REPLACE_WITH_CAFE_ID",
+    "orderType": "pickup",
+    "customerNote": "",
+    "promoCode": ""
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/orders?page=0&size=20</span></h3>
+    <p class="description">Get user order history</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/orders/{id}</span></h3>
+    <p class="description">Get order by ID</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/orders/number/{orderNumber}</span></h3>
+    <p class="description">Get order by order number</p>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/orders/{id}/confirm</span></h3>
+    <p class="description">Staff confirms order</p>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/orders/{id}/preparing</span></h3>
+    <p class="description">Staff starts preparing order</p>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/orders/{id}/ready</span></h3>
+    <p class="description">Staff marks order as ready</p>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/orders/{id}/complete</span></h3>
+    <p class="description">Staff completes order</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/orders/{id}/cancel</span></h3>
+    <p class="description">Cancel order</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "reason": "Customer requested cancellation"
+}</div>
+</div>
+
+<!-- 5. PAYMENTS -->
+<div class="api-section">
+    <h2>5. PAYMENTS</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/payments/methods</span></h3>
+    <p class="description">Get available payment methods</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/payments</span></h3>
+    <p class="description">Create payment for order</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "orderId": "REPLACE_WITH_ORDER_ID",
+    "companyId": "REPLACE_WITH_COMPANY_ID",
+    "amount": 50000,
+    "paymentMethod": "CREDIT",
+    "returnUrl": "https://aicafe.vn/payment/return"
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/payments/{id}</span></h3>
+    <p class="description">Get payment by ID</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/payments/order/{orderId}</span></h3>
+    <p class="description">Get payment by order ID</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/payments/{id}/cancel</span></h3>
+    <p class="description">Cancel pending payment</p>
+</div>
+
+<!-- 6. LOYALTY -->
+<div class="api-section">
+    <h2>6. LOYALTY & REWARDS</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/loyalty/account</span></h3>
+    <p class="description">Get user loyalty account info</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/loyalty/rewards</span></h3>
+    <p class="description">Get available rewards</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/loyalty/redeem</span></h3>
+    <p class="description">Redeem loyalty points</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "rewardId": "REPLACE_WITH_REWARD_ID",
+    "orderId": "REPLACE_WITH_ORDER_ID"
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/loyalty/history?limit=50</span></h3>
+    <p class="description">Get loyalty transaction history</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/loyalty/redemptions</span></h3>
+    <p class="description">Get reward redemption history</p>
+</div>
+
+<!-- 7. SUBSCRIPTIONS -->
+<div class="api-section">
+    <h2>7. SUBSCRIPTIONS</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/subscriptions/plans</span></h3>
+    <p class="description">Get available membership plans</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/subscriptions/plans/{id}</span></h3>
+    <p class="description">Get subscription plan details</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/subscriptions/me</span></h3>
+    <p class="description">Get user current subscription</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/subscriptions</span></h3>
+    <p class="description">Subscribe to membership plan</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "planId": "REPLACE_WITH_PLAN_ID",
+    "billingCycle": "monthly",
+    "paymentMethod": "CREDIT"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/subscriptions/cancel</span></h3>
+    <p class="description">Cancel active subscription</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "reason": "No longer need the subscription"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/subscriptions/pause</span></h3>
+    <p class="description">Pause active subscription</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/subscriptions/resume</span></h3>
+    <p class="description">Resume paused subscription</p>
+</div>
+
+<!-- 8. NOTIFICATIONS -->
+<div class="api-section">
+    <h2>8. NOTIFICATIONS</h2>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/notifications/devices</span></h3>
+    <p class="description">Register device token</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "token": "device_token_here",
+    "platform": "android"
+}</div>
+
+    <h3><span class="method delete">DELETE</span><span class="url">/v1/notifications/devices/{token}</span></h3>
+    <p class="description">Remove device token</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/notifications/test</span></h3>
+    <p class="description">Send test push notification</p>
+</div>
+
+<!-- 9. CAFES -->
+<div class="api-section">
+    <h2>9. CAFES</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/cafes?companyId={UUID}</span></h3>
+    <p class="description">Get list of cafes</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/cafes/{id}</span></h3>
+    <p class="description">Get cafe by ID</p>
+</div>
+
+<!-- 10. ADMIN PRODUCTS -->
+<div class="api-section">
+    <h2>10. ADMIN - PRODUCTS</h2>
+    <p><strong>Headers:</strong> X-Company-ID: {{companyId}}</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/products?page=0&size=20</span></h3>
+    <p class="description">Get products list</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/products/{id}</span></h3>
+    <p class="description">Get product by ID</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/products</span></h3>
+    <p class="description">Create new product</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "categoryId": "REPLACE_WITH_CATEGORY_ID",
+    "name": "Ca Phe Sua",
+    "description": "Ca phe sua da dam da",
+    "price": 35000,
+    "originalPrice": 40000,
+    "imageUrl": "https://example.com/coffee.jpg",
+    "stock": 100
+}</div>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/admin/products/{id}</span></h3>
+    <p class="description">Update product</p>
+
+    <h3><span class="method delete">DELETE</span><span class="url">/v1/admin/products/{id}</span></h3>
+    <p class="description">Delete product</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/products/categories</span></h3>
+    <p class="description">Get product categories</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/products/categories</span></h3>
+    <p class="description">Create new category</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "name": "Ca Phe",
+    "icon": "coffee",
+    "color": "#8B4513",
+    "sortOrder": 1
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/products/promotions</span></h3>
+    <p class="description">Get promotions</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/products/promotions</span></h3>
+    <p class="description">Create new promotion</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "code": "SUMMER2024",
+    "name": "Summer Sale",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "minOrderAmount": 50000,
+    "maxDiscountAmount": 20000,
+    "startDate": "2024-06-01T00:00:00Z",
+    "endDate": "2024-08-31T23:59:59Z",
+    "usageLimit": 100
+}</div>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/products/rewards</span></h3>
+    <p class="description">Get loyalty rewards</p>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/products/rewards</span></h3>
+    <p class="description">Create new loyalty reward</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "code": "FREESHIP",
+    "name": "Free Shipping",
+    "rewardType": "free_delivery",
+    "pointsCost": 100
+}</div>
+</div>
+
+<!-- 11. ADMIN ORDERS -->
+<div class="api-section">
+    <h2>11. ADMIN - ORDERS</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/orders?page=0&size=20</span></h3>
+    <p class="description">Get orders for admin</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/orders/{id}</span></h3>
+    <p class="description">Get order details for admin</p>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/admin/orders/{id}/status</span></h3>
+    <p class="description">Update order status</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "status": "preparing",
+    "staffNote": "Order in progress"
+}</div>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/admin/orders/{id}/assign</span></h3>
+    <p class="description">Assign order to staff/cafe</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "staffId": "REPLACE_WITH_STAFF_ID",
+    "cafeId": "REPLACE_WITH_CAFE_ID"
+}</div>
+
+    <h3><span class="method put">PUT</span><span class="url">/v1/admin/orders/{id}/note</span></h3>
+    <p class="description">Update order note</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "note": "Customer VIP"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/orders/{id}/cancel</span></h3>
+    <p class="description">Cancel order as admin</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "reason": "Out of stock"
+}</div>
+
+    <h3><span class="method post">POST</span><span class="url">/v1/admin/orders/{id}/refund</span></h3>
+    <p class="description">Refund an order</p>
+    <p><strong>Body:</strong></p>
+    <div class="body-json">{
+    "reason": "Customer request"
+}</div>
+</div>
+
+<!-- 12. ADMIN DASHBOARD -->
+<div class="api-section">
+    <h2>12. ADMIN - DASHBOARD</h2>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/dashboard/overview?period=month</span></h3>
+    <p class="description">Get dashboard overview statistics (period: day|week|month|year)</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/dashboard/revenue-chart?period=month</span></h3>
+    <p class="description">Get revenue chart data</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/dashboard/top-products?limit=10</span></h3>
+    <p class="description">Get top selling products</p>
+
+    <h3><span class="method get">GET</span><span class="url">/v1/admin/dashboard/quick-stats</span></h3>
+    <p class="description">Get quick statistics</p>
+</div>
+
+<!-- PLACEHOLDERS -->
+<div class="api-section">
+    <h2>PLACEHOLDERS</h2>
+    <table>
+        <tr><th>Placeholder</th><th>Description</th></tr>
+        <tr><td><code>{{accessToken}}</code></td><td>JWT access token (auto saved after login)</td></tr>
+        <tr><td><code>{{refreshToken}}</code></td><td>Refresh token (auto saved after login)</td></tr>
+        <tr><td><code>{{userId}}</code></td><td>User ID (auto saved after login)</td></tr>
+        <tr><td><code>{{companyId}}</code></td><td>Company UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_CAFE_ID</code></td><td>Cafe UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_PRODUCT_ID</code></td><td>Product UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_ORDER_ID</code></td><td>Order UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_CATEGORY_ID</code></td><td>Category UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_REWARD_ID</code></td><td>Reward UUID</td></tr>
+        <tr><td><code>REPLACE_WITH_PLAN_ID</code></td><td>Subscription plan UUID</td></tr>
+    </table>
+</div>
+
+<!-- RESPONSE FORMAT -->
+<div class="api-section">
+    <h2>RESPONSE FORMAT</h2>
+    <div class="body-json">{
+    "success": true,
+    "data": { ... },
+    "message": "Success",
+    "timestamp": "2024-01-01T12:00:00Z"
+}</div>
+</div>
+
+</body>
+</html>

@@ -40,7 +40,7 @@ public class OrderManagementService {
     @Transactional(readOnly = true)
     public Order getOrder(UUID orderId) {
         return orderRepository.findByIdWithItems(orderId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Order not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Order not found"));
     }
 
     @Transactional
@@ -90,7 +90,7 @@ public class OrderManagementService {
         OrderItem item = order.getItems().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Order item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", "Order item not found"));
 
         item.setItemStatus(itemStatus);
 
@@ -107,7 +107,7 @@ public class OrderManagementService {
         Order order = getOrder(orderId);
 
         if (!canCancel(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CANCEL",
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "CANNOT_CANCEL",
                     "Order cannot be cancelled in current status: " + order.getStatus());
         }
 
@@ -124,7 +124,7 @@ public class OrderManagementService {
         Order order = getOrder(orderId);
 
         if (!"completed".equals(order.getStatus()) && !"cancelled".equals(order.getStatus())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_REFUND",
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "CANNOT_REFUND",
                     "Only completed or cancelled orders can be refunded");
         }
 
@@ -145,7 +145,7 @@ public class OrderManagementService {
         };
 
         if (!valid) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_TRANSITION",
+            throw new ApiException(HttpStatus.BAD_REQUEST.value(), "INVALID_TRANSITION",
                     "Cannot transition from " + currentStatus + " to " + newStatus);
         }
     }

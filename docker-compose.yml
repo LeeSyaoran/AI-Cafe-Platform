@@ -158,8 +158,8 @@ services:
   # === MEMBER SERVICE (Java) ===
   member-service:
     build:
-      context: ./BackEnd/java
-      dockerfile: member-service/Dockerfile
+      context: ./BackEnd/java/member-service
+      dockerfile: Dockerfile
     image: aicafe-member-service:latest
     container_name: aicafe-member-service
     environment:
@@ -216,6 +216,30 @@ services:
       DB_PASSWORD: aicafe_secret_2024
     ports:
       - "3009:3009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+    restart: unless-stopped
+
+  # === CAFE SERVICE (Java) ===
+  cafe-service:
+    build:
+      context: ./BackEnd/java/cafe-service
+      dockerfile: Dockerfile
+    image: aicafe-cafe-service:latest
+    container_name: aicafe-cafe-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3010
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+    ports:
+      - "3010:3010"
     depends_on:
       postgres:
         condition: service_healthy

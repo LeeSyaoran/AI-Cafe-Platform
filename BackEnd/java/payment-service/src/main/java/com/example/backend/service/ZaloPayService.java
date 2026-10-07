@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @Service
 public class ZaloPayService {
@@ -31,7 +34,8 @@ public class ZaloPayService {
         order.put("app_trans_id", payment.getTransactionId()); // Format: yymmdd_xxxxxx
         order.put("app_user", payment.getUserId().toString());
         order.put("app_time", System.currentTimeMillis());
-        order.put("amount", (long) payment.getAmount());
+        double amountDouble = payment.getAmount() != null ? payment.getAmount() : 0.0;
+        order.put("amount", (long) amountDouble);
         order.put("app_callback_url", returnUrl);
         order.put("embed_data", "{}");
         order.put("item", "[]");

@@ -35,7 +35,8 @@ public class MoMoService {
 
     public String createPaymentUrl(Payment payment) {
         long requestId = System.currentTimeMillis();
-        long amount = (long) payment.getAmount();
+        double amountDouble = payment.getAmount() != null ? payment.getAmount() : 0.0;
+        long amount = (long) amountDouble;
 
         Map<String, Object> params = new HashMap<>();
         params.put("partnerCode", partnerCode);

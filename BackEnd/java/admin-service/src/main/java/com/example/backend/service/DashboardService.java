@@ -44,7 +44,11 @@ public class DashboardService {
         double averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
         // Get order status breakdown
-        Map<String, Long> ordersByStatus = orderRepository.countOrdersByStatus(companyId, cafeId, startInstant);
+        List<Object[]> statusResults = orderRepository.countOrdersByStatus(companyId, cafeId, startInstant);
+        Map<String, Long> ordersByStatus = new HashMap<>();
+        for (Object[] row : statusResults) {
+            ordersByStatus.put((String) row[0], ((Number) row[1]).longValue());
+        }
 
         // Calculate growth rates (compare with previous period)
         LocalDate prevStart = startDate.minusDays(java.time.temporal.ChronoUnit.DAYS.between(startDate, now));
@@ -121,7 +125,15 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public List<TopProductData> getTopProducts(UUID companyId, UUID cafeId, int limit) {
-        return orderRepository.findTopProducts(companyId, cafeId, limit);
+        List<Object[]> results = orderRepository.findTopProducts(companyId, cafeId);
+        return results.stream()
+                .map(row -> TopProductData.builder()
+                        .productId((UUID) row[0])
+                        .productName("Product")
+                        .quantitySold(((Number) row[1]).longValue())
+                        .revenue(((Number) row[2]).doubleValue())
+                        .build())
+                .toList();
     }
 
     @Transactional(readOnly = true)

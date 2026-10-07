@@ -204,11 +204,10 @@ public class ProductManagementController {
                 .name(request.getName())
                 .description(request.getDescription())
                 .rewardType(request.getRewardType())
+                .category(request.getRewardType()) // category field holds the reward type
                 .discountType(request.getDiscountType())
                 .discountValue(request.getDiscountValue())
-                .pointsCost(request.getPointsCost())
-                .validityDays(request.getValidityDays() != null ? request.getValidityDays() : 30)
-                .applicableTiers(request.getApplicableTiers())
+                .pointsRequired(request.getPointsCost())
                 .status("active")
                 .build();
 

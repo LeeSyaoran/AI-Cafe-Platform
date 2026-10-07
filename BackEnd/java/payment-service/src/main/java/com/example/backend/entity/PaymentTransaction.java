@@ -35,6 +35,11 @@ public class PaymentTransaction {
     @Column(nullable = false)
     private String status; // success, failed, pending
 
+    private String provider;
+
+    @Column(name = "provider_transaction_id")
+    private String providerTransactionId;
+
     @Column(name = "request_data", columnDefinition = "TEXT")
     private String requestData;
 

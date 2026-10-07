@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.entity.Payment;
 import com.example.backend.request.CreatePaymentRequest;
 import com.example.backend.response.ApiResponse;
+import com.example.backend.response.PaymentResponse;
 import com.example.backend.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,9 +53,9 @@ public class PaymentController {
 
     // POST /v1/payments/:id/cancel
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<PaymentResponse>> cancelPayment(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<String>> cancelPayment(@PathVariable UUID id) {
         paymentService.cancelPayment(id);
-        return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("message", "Payment cancelled")));
+        return ResponseEntity.ok(ApiResponse.ok("Payment cancelled"));
     }
 
     // GET /v1/payments/methods
@@ -79,8 +80,8 @@ public class PaymentController {
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentUrl(payment.getPaymentUrl())
-                .paidAt(payment.getPaidAt())
                 .createdAt(payment.getCreatedAt())
+                .expiredAt(payment.getExpiredAt())
                 .build();
     }
 

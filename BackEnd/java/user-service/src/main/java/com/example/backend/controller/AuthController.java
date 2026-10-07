@@ -1,5 +1,6 @@
 package com.example.backend.controller;
 
+import com.example.backend.entity.User;
 import com.example.backend.request.*;
 import com.example.backend.response.ApiResponse;
 import com.example.backend.response.AuthResponse;

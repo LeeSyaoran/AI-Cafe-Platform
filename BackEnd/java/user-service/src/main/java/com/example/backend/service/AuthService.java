@@ -46,14 +46,14 @@ public class AuthService {
     @Transactional
     public AuthTokens login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid email or password"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED.value(), "INVALID_CREDENTIALS", "Invalid email or password"));
 
         if (!password.equals(user.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid email or password");
+            throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "INVALID_CREDENTIALS", "Invalid email or password");
         }
 
         if ("inactive".equals(user.getStatus())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_INACTIVE", "Account is inactive");
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "ACCOUNT_INACTIVE", "Account is inactive");
         }
 
         String accessToken = generateAccessToken(user);
@@ -65,18 +65,18 @@ public class AuthService {
     @Transactional
     public AuthTokens refresh(String refreshToken) {
         RefreshToken stored = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN", "Invalid refresh token"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED.value(), "INVALID_TOKEN", "Invalid refresh token"));
 
         if (stored.getRevoked()) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "TOKEN_REVOKED", "Refresh token has been revoked");
+            throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "TOKEN_REVOKED", "Refresh token has been revoked");
         }
 
         if (stored.getExpiresAt().isBefore(Instant.now())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "TOKEN_EXPIRED", "Refresh token has expired");
+            throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "TOKEN_EXPIRED", "Refresh token has expired");
         }
 
         User user = userRepository.findById(stored.getUserId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "USER_NOT_FOUND", "User not found"));
 
         // Revoke old refresh token
         stored.setRevoked(true);
@@ -116,14 +116,14 @@ public class AuthService {
                     .getPayload();
 
             if (!"access".equals(claims.get("type"))) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN_TYPE", "Invalid token type");
+                throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "INVALID_TOKEN_TYPE", "Invalid token type");
             }
 
             return UUID.fromString(claims.getSubject());
         } catch (ExpiredJwtException e) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "TOKEN_EXPIRED", "Access token has expired");
+            throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "TOKEN_EXPIRED", "Access token has expired");
         } catch (JwtException e) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN", "Invalid access token");
+            throw new ApiException(HttpStatus.UNAUTHORIZED.value(), "INVALID_TOKEN", "Invalid access token");
         }
     }
 

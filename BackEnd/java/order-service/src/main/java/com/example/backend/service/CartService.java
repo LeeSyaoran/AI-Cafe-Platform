@@ -50,7 +50,7 @@ public class CartService {
 
         // Get product info
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "PRODUCT_NOT_FOUND", "Product not found"));
 
         // Check if item already exists in cart
         CartItem existingItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
@@ -68,8 +68,9 @@ public class CartService {
 
         // Create new item
         CartItem item = CartItem.builder()
-                .cart(cart)
+                .cartId(cart.getId())
                 .productId(productId)
+                .productName(product.getName())
                 .variantId(variantId)
                 .quantity(quantity)
                 .optionsJson(optionsJson)
@@ -79,6 +80,7 @@ public class CartService {
                 .notes(notes)
                 .build();
 
+        cart.addItem(item);
         item = cartItemRepository.save(item);
         updateCartTotals(cart.getId());
 
@@ -89,11 +91,11 @@ public class CartService {
     @Transactional
     public CartItem updateItem(UUID userId, UUID itemId, Integer quantity, String notes) {
         CartItem item = cartItemRepository.findById(itemId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND", "Cart item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "ITEM_NOT_FOUND", "Cart item not found"));
 
         // Verify ownership
         if (!item.getCart().getUserId().equals(userId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_OWNER", "You do not own this item");
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "NOT_OWNER", "You do not own this item");
         }
 
         if (quantity <= 0) {
@@ -118,11 +120,11 @@ public class CartService {
     @Transactional
     public void removeItem(UUID userId, UUID itemId) {
         CartItem item = cartItemRepository.findById(itemId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND", "Cart item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "ITEM_NOT_FOUND", "Cart item not found"));
 
         // Verify ownership
         if (!item.getCart().getUserId().equals(userId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_OWNER", "You do not own this item");
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "NOT_OWNER", "You do not own this item");
         }
 
         UUID cartId = item.getCart().getId();
@@ -135,7 +137,7 @@ public class CartService {
     @Transactional
     public void clearCart(UUID userId, UUID cafeId) {
         Cart cart = cartRepository.findByUserIdAndCafeId(userId, cafeId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CART_NOT_FOUND", "Cart not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "CART_NOT_FOUND", "Cart not found"));
 
         cartItemRepository.deleteAllByCartId(cart.getId());
         cart.setSubtotal(0.0);
