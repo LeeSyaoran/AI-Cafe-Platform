@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,17 +12,12 @@ import java.util.UUID;
     @Index(name = "idx_promotions_company_id", columnList = "company_id"),
     @Index(name = "idx_promotions_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Promotion {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Promotion extends BaseEntity {
 
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
@@ -36,12 +29,11 @@ public class Promotion {
     private String description;
 
     @Column(nullable = false)
-    private String type; // percent, fixed, bogo, free_delivery
+    private String type;
 
     @Column(name = "discount_value")
     private Double discountValue;
 
-    // Alias for backward compatibility (builder uses this name)
     @Column(name = "discount_type")
     private String discountType;
 
@@ -75,15 +67,6 @@ public class Promotion {
     @Column(name = "code")
     private String code;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    // Alias for backward compatibility
     public String getDiscountType() {
         return discountType != null ? discountType : type;
     }

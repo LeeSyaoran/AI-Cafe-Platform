@@ -5,10 +5,14 @@ WORKDIR /app
 
 RUN apk add --no-cache git ca-certificates
 
-# Copy and build
+# Copy go mod files and download dependencies for layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source and build
 COPY . .
-RUN go mod tidy && \
-    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api-gateway ./cmd/server
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o api-gateway ./cmd/server
 
 # Runtime stage
 FROM alpine:3.19

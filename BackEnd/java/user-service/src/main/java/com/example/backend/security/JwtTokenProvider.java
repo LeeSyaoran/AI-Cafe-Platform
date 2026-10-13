@@ -10,15 +10,16 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwt.secret}")
+    @Value("${app.jwt.secret:${jwt.secret:aicafe-super-secret-jwt-key-for-authentication-2024-must-be-long-enough}}")
     private String jwtSecret;
 
-    @Value("${app.jwt.access-token-expiration}")
+    @Value("${app.jwt.access-token-expiration:${jwt.expiration:86400000}}")
     private long accessTokenExpiration;
 
     private SecretKey key;
@@ -30,7 +31,8 @@ public class JwtTokenProvider {
 
     public String generateToken(String userId, String email, String role) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + accessTokenExpiration * 1000);
+        long expirationMs = (accessTokenExpiration > 1000000) ? accessTokenExpiration : (accessTokenExpiration * 1000L);
+        Date expiryDate = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .subject(userId)
@@ -42,14 +44,13 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token) {
+    public UUID getUserIdFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return Long.parseLong(claims.getSubject());
+        return UUID.fromString(claims.getSubject());
     }
 
     public String getEmailFromToken(String token) {
@@ -58,7 +59,6 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
         return claims.get("email", String.class);
     }
 
@@ -68,7 +68,6 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
         return claims.get("role", String.class);
     }
 
@@ -79,16 +78,8 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (SecurityException ex) {
-            log.error("Invalid JWT signature");
-        } catch (MalformedJwtException ex) {
-            log.error("Invalid JWT token");
-        } catch (ExpiredJwtException ex) {
-            log.error("Expired JWT token");
-        } catch (UnsupportedJwtException ex) {
-            log.error("Unsupported JWT token");
-        } catch (IllegalArgumentException ex) {
-            log.error("JWT claims string is empty");
+        } catch (SecurityException | MalformedJwtException | ExpiredJwtException | UnsupportedJwtException | IllegalArgumentException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
         }
         return false;
     }

@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,17 +13,12 @@ import java.util.UUID;
     @Index(name = "idx_rewards_category", columnList = "category"),
     @Index(name = "idx_rewards_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Reward {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Reward extends BaseEntity {
 
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
@@ -37,9 +30,8 @@ public class Reward {
     private String description;
 
     @Column(nullable = false)
-    private String category; // discount, free_item, free_delivery, upgrade
+    private String category;
 
-    // Builder-friendly field name (same as category)
     @Column(name = "reward_type")
     private String rewardType;
 
@@ -56,11 +48,11 @@ public class Reward {
     private String code;
 
     @Column(columnDefinition = "TEXT")
-    private String benefits; // JSON
+    private String benefits;
 
     @Column(name = "min_tier")
     @Builder.Default
-    private String minTier = "bronze"; // bronze, silver, gold, platinum
+    private String minTier = "bronze";
 
     @Column(name = "max_redemptions_per_user")
     @Builder.Default
@@ -87,17 +79,8 @@ public class Reward {
 
     @Column
     @Builder.Default
-    private String status = "active"; // active, inactive, expired
+    private String status = "active";
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    // Alias methods for backward compatibility
     public Integer getPointsCost() {
         return pointsRequired;
     }
@@ -128,38 +111,5 @@ public class Reward {
 
     public void setRewardType(String rewardType) {
         this.rewardType = rewardType;
-        // Don't auto-set category - they are separate fields
-    }
-
-    public String getDiscountType() {
-        return discountType;
-    }
-
-    public void setDiscountType(String discountType) {
-        this.discountType = discountType;
-    }
-
-    public Double getDiscountValue() {
-        return discountValue;
-    }
-
-    public void setDiscountValue(Double discountValue) {
-        this.discountValue = discountValue;
-    }
-
-    public Integer getValidityDays() {
-        return null; // Not stored
-    }
-
-    public void setValidityDays(Integer validityDays) {
-        // No-op
-    }
-
-    public String getApplicableTiers() {
-        return null;
-    }
-
-    public void setApplicableTiers(String applicableTiers) {
-        // No-op
     }
 }

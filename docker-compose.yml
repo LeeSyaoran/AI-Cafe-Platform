@@ -1,13 +1,11 @@
 # ============================================
-# AI Café Platform - All in One
-# Run: docker compose up -d --build (build + start)
-# Run: docker compose up -d (start only, use cached images)
+# AI Café Platform - Frontend + API Gateway
+# ============================================
+# Run: docker compose up -d --build
 # ============================================
 
-version: '3.8'
-
 services:
-  # === INFRASTRUCTURE ===
+  # ==================== INFRASTRUCTURE ====================
   postgres:
     image: postgres:15-alpine
     container_name: aicafe-postgres
@@ -19,7 +17,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./Database:/docker-entrypoint-initdb.d
+      - ./Database:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aicafe"]
       interval: 10s
@@ -59,18 +57,15 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === API GATEWAY (Go) ===
+  # ==================== BACKEND (Go API Gateway) ====================
   api-gateway:
-    build:
-      context: ./BackEnd/go/api-gateway
-      dockerfile: Dockerfile
-    image: aicafe-api-gateway:latest
+    build: ./BackEnd/go/api-gateway
     container_name: aicafe-api-gateway
     environment:
       PORT: 3000
       DATABASE_URL: postgres://aicafe:aicafe_secret_2024@postgres:5432/aicafe?sslmode=disable
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: aicafe_jwt_secret_key_2024_change_in_production
+      JWT_SECRET: aicafe-super-secret-jwt-key-for-authentication-2024-must-be-long-enough
     ports:
       - "3000:3000"
     depends_on:
@@ -82,12 +77,40 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === USER SERVICE (Java) ===
+  # ==================== FRONTEND (Next.js) ====================
+  web:
+    build: ./FrontEnd/Web
+    container_name: aicafe-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://api-gateway:3000
+      NEXT_PUBLIC_WS_URL: ws://api-gateway:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api-gateway
+    networks:
+      - aicafe-network
+    restart: unless-stopped
+
+  # ==================== REVERSE PROXY (Nginx) ====================
+  nginx:
+    image: nginx:alpine
+    container_name: aicafe-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - api-gateway
+      - web
+    networks:
+      - aicafe-network
+    restart: unless-stopped
+
+# ==================== JAVA SERVICES ====================
   user-service:
-    build:
-      context: ./BackEnd/java/user-service
-      dockerfile: Dockerfile
-    image: aicafe-user-service:latest
+    build: ./BackEnd/java/user-service
     container_name: aicafe-user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -107,12 +130,8 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === PAYMENT SERVICE (Java) ===
   payment-service:
-    build:
-      context: ./BackEnd/java/payment-service
-      dockerfile: Dockerfile
-    image: aicafe-payment-service:latest
+    build: ./BackEnd/java/payment-service
     container_name: aicafe-payment-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -131,36 +150,8 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === ORDER SERVICE (Java) ===
-  order-service:
-    build:
-      context: ./BackEnd/java/order-service
-      dockerfile: Dockerfile
-    image: aicafe-order-service:latest
-    container_name: aicafe-order-service
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SERVER_PORT: 3007
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: aicafe
-      DB_USERNAME: aicafe
-      DB_PASSWORD: aicafe_secret_2024
-    ports:
-      - "3007:3007"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - aicafe-network
-    restart: unless-stopped
-
-  # === MEMBER SERVICE (Java) ===
   member-service:
-    build:
-      context: ./BackEnd/java/member-service
-      dockerfile: Dockerfile
-    image: aicafe-member-service:latest
+    build: ./BackEnd/java/member-service
     container_name: aicafe-member-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -179,12 +170,28 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === NOTIFICATION SERVICE (Java) ===
+  order-service:
+    build: ./BackEnd/java/order-service
+    container_name: aicafe-order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 3007
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: aicafe
+      DB_USERNAME: aicafe
+      DB_PASSWORD: aicafe_secret_2024
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aicafe-network
+    restart: unless-stopped
+
   notification-service:
-    build:
-      context: ./BackEnd/java/notification-service
-      dockerfile: Dockerfile
-    image: aicafe-notification-service:latest
+    build: ./BackEnd/java/notification-service
     container_name: aicafe-notification-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -199,12 +206,8 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === ADMIN SERVICE (Java) ===
   admin-service:
-    build:
-      context: ./BackEnd/java/admin-service
-      dockerfile: Dockerfile
-    image: aicafe-admin-service:latest
+    build: ./BackEnd/java/admin-service
     container_name: aicafe-admin-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -223,12 +226,8 @@ services:
       - aicafe-network
     restart: unless-stopped
 
-  # === CAFE SERVICE (Java) ===
   cafe-service:
-    build:
-      context: ./BackEnd/java/cafe-service
-      dockerfile: Dockerfile
-    image: aicafe-cafe-service:latest
+    build: ./BackEnd/java/cafe-service
     container_name: aicafe-cafe-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -247,6 +246,7 @@ services:
       - aicafe-network
     restart: unless-stopped
 
+# ==================== VOLUMES & NETWORKS ====================
 volumes:
   postgres_data:
   redis_data:

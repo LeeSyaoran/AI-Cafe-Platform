@@ -1,6 +1,5 @@
 package com.example.backend.security;
 
-import com.example.backend.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,29 +7,43 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 public class UserPrincipal implements UserDetails {
 
-    private final User user;
+    private final UUID userId;
+    private final String email;
+    private final String role;
+    private final String status;
 
-    public UserPrincipal(User user) {
-        this.user = user;
+    public UserPrincipal(UUID userId) {
+        this.userId = userId;
+        this.email = null;
+        this.role = null;
+        this.status = null;
+    }
+
+    public UserPrincipal(UUID userId, String email, String role, String status) {
+        this.userId = userId;
+        this.email = email;
+        this.role = role;
+        this.status = status;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + (role != null ? role.toUpperCase() : "USER")));
     }
 
     @Override
     public String getPassword() {
-        return user.getPasswordHash();
+        return null;
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return email;
     }
 
     @Override
@@ -40,7 +53,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return !"inactive".equals(user.getStatus());
+        return !"inactive".equals(status);
     }
 
     @Override
@@ -50,6 +63,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return "active".equals(user.getStatus());
+        return "active".equals(status);
     }
 }

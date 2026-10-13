@@ -2,11 +2,8 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -15,17 +12,12 @@ import java.util.UUID;
     @Index(name = "idx_products_company_id", columnList = "company_id"),
     @Index(name = "idx_products_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Product {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Product extends BaseEntity {
 
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
@@ -79,7 +71,7 @@ public class Product {
 
     @Column
     @Builder.Default
-    private String status = "active"; // active, inactive, out_of_stock
+    private String status = "active";
 
     @Column(name = "sold_count")
     @Builder.Default
@@ -96,12 +88,4 @@ public class Product {
     @Column(name = "is_best_seller")
     @Builder.Default
     private Boolean isBestSeller = false;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

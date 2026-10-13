@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -16,45 +15,38 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	// Load config
 	cfg := config.Load()
 
-	// Create database pool for direct queries
-	dbPool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
+	// ==================== INIT REDIS ====================
+	redis, err := repository.NewRedisClient(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("Failed to create database pool: %v", err)
+		log.Printf("[WARN] Failed to connect to Redis: %v. OTP will not work properly.", err)
+		// Continue anyway - Redis is optional for MVP
+	} else {
+		log.Println("Connected to Redis")
+		defer redis.Close()
 	}
-	defer dbPool.Close()
 
-	// Test connection
-	if err := dbPool.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-	log.Println("Connected to database")
-
-	// Init repository
+	// ==================== INIT POSTGRES ====================
 	repo := repository.NewPostgresRepo(cfg.DatabaseURL)
 	defer repo.Close()
 
-	// Init services
-	authService := service.NewAuthService(repo, cfg.JWT)
-	_ = service.NewProductService(repo) // Initialize if needed
+	// ==================== INIT SERVICES ====================
+	authService := service.NewAuthService(repo, redis, cfg.JWT)
 	creditService := service.NewCreditService(repo)
 
-	// Init handlers
-	authHandler := handler.NewAuthHandler(repo, cfg.JWT)
-	productHandler := handler.NewProductHandler(dbPool)
-	orderHandler := handler.NewOrderHandler(repo)
-	cartHandler := handler.NewCartHandler(repo)
+	// ==================== INIT HANDLERS ====================
+	authHandler := handler.NewAuthHandler(authService)
 	aiHandler := handler.NewAIHandler(creditService)
 
-	// Init middleware
+	// ==================== INIT MIDDLEWARE ====================
 	authMiddleware := middleware.NewAuthMiddleware(authService, cfg.JWT)
 
 	// Create Fiber app
@@ -78,12 +70,6 @@ func main() {
 	// Rate limiter
 	app.Use(middleware.RateLimiterMiddleware(cfg.RateLimit))
 
-	// Database middleware - attach db pool to all requests
-	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("db", dbPool)
-		return c.Next()
-	})
-
 	// Health check
 	app.Get("/health", handler.HealthCheck)
 
@@ -94,74 +80,78 @@ func main() {
 	app.Use("/ws", middleware.WebSocketUpgrade())
 	app.Get("/ws/chat", websocket.New(aiHandler.ChatWebSocket))
 
-	// ==================== PUBLIC ROUTES ====================
-	v1 := app.Group("/v1")
+	// Helper to proxy requests to microservices
+	proxyPass := func(targetHost string) fiber.Handler {
+		return func(c *fiber.Ctx) error {
+			target := targetHost + c.OriginalURL()
+			if err := proxy.Do(c, target); err != nil {
+				return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
+					"success":   false,
+					"message":   "Service temporarily unavailable: " + err.Error(),
+					"errorCode": "SERVICE_UNAVAILABLE",
+				})
+			}
+			c.Response().Header.Del(fiber.HeaderServer)
+			return nil
+		}
+	}
 
-	// Auth routes (OTP-based)
+	// ==================== MICROSERVICES PROXY ROUTES ====================
+	// 1. Admin Service (Protected with Admin Role)
+	app.All("/v1/admin/*", authMiddleware.JWTAuth(), authMiddleware.RequireRole("admin"), proxyPass(cfg.AdminServiceURL))
+	app.All("/v1/admin", authMiddleware.JWTAuth(), authMiddleware.RequireRole("admin"), proxyPass(cfg.AdminServiceURL))
+	app.All("/admin/*", authMiddleware.JWTAuth(), authMiddleware.RequireRole("admin"), proxyPass(cfg.AdminServiceURL))
+	app.All("/admin", authMiddleware.JWTAuth(), authMiddleware.RequireRole("admin"), proxyPass(cfg.AdminServiceURL))
+
+	// 2. Cafe Service (cafes, seats, reservations)
+	app.All("/v1/cafes/*", proxyPass(cfg.CafeServiceURL))
+	app.All("/v1/cafes", proxyPass(cfg.CafeServiceURL))
+	app.All("/v1/seats/*", proxyPass(cfg.CafeServiceURL))
+	app.All("/v1/seats", proxyPass(cfg.CafeServiceURL))
+	app.All("/v1/reservations/*", proxyPass(cfg.CafeServiceURL))
+	app.All("/v1/reservations", proxyPass(cfg.CafeServiceURL))
+
+	// 3. Payment Service
+	app.All("/v1/payments/*", proxyPass(cfg.PaymentServiceURL))
+	app.All("/v1/payments", proxyPass(cfg.PaymentServiceURL))
+
+	// 4. Member Service (loyalty, subscriptions)
+	app.All("/v1/loyalty/*", proxyPass(cfg.MemberServiceURL))
+	app.All("/v1/loyalty", proxyPass(cfg.MemberServiceURL))
+	app.All("/v1/subscriptions/*", proxyPass(cfg.MemberServiceURL))
+	app.All("/v1/subscriptions", proxyPass(cfg.MemberServiceURL))
+
+	// 5. Notification Service
+	app.All("/v1/notifications/*", proxyPass(cfg.NotificationServiceURL))
+	app.All("/v1/notifications", proxyPass(cfg.NotificationServiceURL))
+
+	// 6. Order Service (products, cart, orders)
+	app.All("/v1/products/*", proxyPass(cfg.OrderServiceURL))
+	app.All("/v1/products", proxyPass(cfg.OrderServiceURL))
+	app.All("/v1/cart/*", proxyPass(cfg.OrderServiceURL))
+	app.All("/v1/cart", proxyPass(cfg.OrderServiceURL))
+	app.All("/v1/orders/*", proxyPass(cfg.OrderServiceURL))
+	app.All("/v1/orders", proxyPass(cfg.OrderServiceURL))
+
+	// 7. User Service
+	app.All("/v1/users/*", proxyPass(cfg.UserServiceURL))
+	app.All("/v1/users", proxyPass(cfg.UserServiceURL))
+	app.All("/v1/me/*", proxyPass(cfg.UserServiceURL))
+	app.All("/v1/me", proxyPass(cfg.UserServiceURL))
+	app.Post("/v1/auth/register", proxyPass(cfg.UserServiceURL))
+	app.Post("/v1/auth/login", proxyPass(cfg.UserServiceURL))
+	app.Post("/v1/auth/refresh", proxyPass(cfg.UserServiceURL))
+	app.Post("/v1/auth/logout", proxyPass(cfg.UserServiceURL))
+
+	// ==================== NATIVE GATEWAY ROUTES ====================
+	v1 := app.Group("/v1")
 	auth := v1.Group("/auth")
 	auth.Post("/send-otp", authHandler.SendOTP)
 	auth.Post("/verify-otp", authHandler.VerifyOTP)
-	auth.Post("/refresh", authHandler.RefreshToken)
 
-	// Menu / Products (public)
-	v1.Get("/menu", handler.GetMenu)
-	v1.Get("/cafes", handler.ListCafes)
-	v1.Get("/cafes/:id", handler.GetCafe)
-	v1.Get("/categories", handler.ListCategories)
-	v1.Get("/categories/:id", handler.GetCategory)
-
-	products := v1.Group("/products")
-	products.Get("/", productHandler.ListProducts)
-	products.Get("/featured", productHandler.GetFeaturedProducts)
-	products.Get("/best-sellers", productHandler.GetBestSellers)
-	products.Get("/:id", productHandler.GetProduct)
-
-	// ==================== PROTECTED ROUTES ====================
 	protected := v1.Group("/", authMiddleware.JWTAuth())
-
-	// Auth (protected)
-	protected.Post("/auth/logout", authHandler.Logout)
-	protected.Get("/me", authHandler.GetProfile)
-	protected.Put("/me", authHandler.UpdateProfile)
-
-	// Cart
-	cart := protected.Group("/cart")
-	cart.Get("/", cartHandler.GetCart)
-	cart.Post("/items", cartHandler.AddItem)
-	cart.Put("/items/:id", cartHandler.UpdateItem)
-	cart.Delete("/items/:id", cartHandler.RemoveItem)
-	cart.Post("/clear", cartHandler.ClearCart)
-	cart.Post("/checkout", cartHandler.Checkout)
-
-	// Orders
-	orders := protected.Group("/orders")
-	orders.Get("/", orderHandler.ListOrders)
-	orders.Post("/", orderHandler.CreateOrder)
-	orders.Get("/:id", orderHandler.GetOrder)
-	orders.Put("/:id/cancel", orderHandler.CancelOrder)
-
-	// Wallet & Credits
 	protected.Get("/wallet", handler.GetWallet)
 	protected.Get("/credits/balance", handler.GetCreditBalance)
-
-	// ==================== ADMIN ROUTES ====================
-	admin := protected.Group("/admin")
-	admin.Use(authMiddleware.RequireRole("admin", "manager"))
-
-	adminProducts := admin.Group("/products")
-	adminProducts.Post("/", productHandler.CreateProduct)
-	adminProducts.Put("/:id", productHandler.UpdateProduct)
-	adminProducts.Delete("/:id", productHandler.DeleteProduct)
-
-	adminCategories := admin.Group("/categories")
-	adminCategories.Post("/", handler.CreateCategory)
-	adminCategories.Put("/:id", handler.UpdateCategory)
-	adminCategories.Delete("/:id", handler.DeleteCategory)
-
-	adminCafes := admin.Group("/cafes")
-	adminCafes.Post("/", handler.CreateCafe)
-	adminCafes.Put("/:id", handler.UpdateCafe)
-	adminCafes.Delete("/:id", handler.DeleteCafe)
 
 	// Start server
 	go func() {

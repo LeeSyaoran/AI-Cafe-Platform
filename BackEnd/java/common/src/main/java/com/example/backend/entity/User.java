@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -16,17 +14,15 @@ import java.util.UUID;
     @Index(name = "idx_users_role", columnList = "role"),
     @Index(name = "idx_users_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class User {
+@SuperBuilder
+public class User extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Column(name = "company_id")
+    private UUID companyId;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -34,6 +30,19 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column
     private String phone;
 
     @Column(nullable = false)
@@ -50,14 +59,6 @@ public class User {
     @Column(name = "phone_verified_at")
     private Instant phoneVerifiedAt;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private UserProfile profile;
 }

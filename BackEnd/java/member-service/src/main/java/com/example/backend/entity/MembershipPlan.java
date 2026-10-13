@@ -2,29 +2,19 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.Instant;
-import java.util.UUID;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "membership_plans", indexes = {
-    @Index(name = "idx_membership_plans_code", columnList = "code"),
+    @Index(name = "idx_membership_plans_code", columnList = "code", unique = true),
     @Index(name = "idx_membership_plans_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class MembershipPlan {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class MembershipPlan extends BaseEntity {
 
     @Column(nullable = false, unique = true)
     private String code;
@@ -70,12 +60,4 @@ public class MembershipPlan {
     @Column
     @Builder.Default
     private String status = "active";
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

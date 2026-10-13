@@ -37,7 +37,7 @@ export interface User {
   phone: string;
   email: string;
   name?: string;
-  role: 'customer' | 'manager' | 'admin';
+  role: 'customer' | 'staff' | 'cashier' | 'manager' | 'admin';
   tier: 'bronze' | 'silver' | 'gold' | 'platinum';
   avatar?: string;
 }

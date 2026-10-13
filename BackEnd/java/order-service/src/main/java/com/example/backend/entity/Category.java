@@ -2,10 +2,8 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -13,17 +11,12 @@ import java.util.UUID;
     @Index(name = "idx_categories_company", columnList = "company_id"),
     @Index(name = "idx_categories_slug", columnList = "slug")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Category {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Category extends BaseCreatedEntity {
 
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
@@ -51,8 +44,4 @@ public class Category {
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
 }

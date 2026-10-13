@@ -1,7 +1,11 @@
 package com.example.backend.repository;
 
-import com.example.backend.entity.Order;
-import com.example.backend.entity.OrderItem;
+import com.example.backend.entity.*;
+import com.example.backend.repository.*;
+import com.example.backend.dto.request.*;
+import com.example.backend.dto.response.*;
+import com.example.backend.exception.*;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,11 +39,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.createdAt >= :startDate GROUP BY o.status")
     List<Object[]> countOrdersByStatus(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("startDate") Instant startDate);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.status = :status")
+    long countByStatus(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("status") String status);
+
     @Query("SELECT oi.productId, SUM(oi.quantity) as totalQty, SUM(oi.price * oi.quantity) as totalAmount " +
            "FROM OrderItem oi JOIN oi.order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId " +
            "GROUP BY oi.productId ORDER BY totalQty DESC")
     List<Object[]> findTopProducts(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId);
-
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.companyId = :companyId AND o.cafeId = :cafeId AND o.status = :status")
-    long countByStatus(@Param("companyId") UUID companyId, @Param("cafeId") UUID cafeId, @Param("status") String status);
 }

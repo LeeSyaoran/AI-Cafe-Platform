@@ -1,6 +1,9 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.response.CafeBranchResponse;
+import com.example.backend.entity.Cafe;
 import com.example.backend.response.ApiResponse;
+import com.example.backend.service.CafeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,20 +16,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CafeController {
 
+    private final CafeService cafeService;
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Cafe>>> getCafes(@RequestParam UUID companyId) {
-        return ResponseEntity.ok(ApiResponse.ok(List.of()));
+    public ResponseEntity<ApiResponse<List<CafeBranchResponse>>> getCafes(
+            @RequestParam(required = false) UUID companyId,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(ApiResponse.ok(cafeService.searchCafes(companyId, province, search)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Cafe>> getCafe(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.ok(new Cafe()));
+        return ResponseEntity.ok(ApiResponse.ok(cafeService.getCafeById(id)));
     }
-}
 
-class Cafe {
-    public UUID id;
-    public String name;
-    public String slug;
-    public String address;
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ApiResponse<Cafe>> getCafeBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(ApiResponse.ok(cafeService.getCafeBySlug(slug)));
+    }
 }

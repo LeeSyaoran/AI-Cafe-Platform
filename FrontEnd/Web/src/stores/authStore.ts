@@ -2,14 +2,15 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { UserRole } from '@/types/auth';
 
 export interface User {
   id: string;
   phone: string;
   email: string;
   name?: string;
-  role: string;
-  tier: string;
+  role: UserRole;
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
   avatar?: string;
 }
 

@@ -49,9 +49,12 @@ func (m *AuthMiddleware) JWTAuth() fiber.Handler {
 
 		// Store user info in locals
 		c.Locals("user", claims)
-		c.Locals("userId", claims.UserID)
+		c.Locals("claims", claims)
+		c.Locals("userID", claims.UserID)
 		c.Locals("email", claims.Email)
+		c.Locals("phone", claims.Phone)
 		c.Locals("role", claims.Role)
+		c.Locals("tier", claims.Tier)
 
 		return c.Next()
 	}
@@ -70,6 +73,6 @@ func (m *AuthMiddleware) RequireRole(roles ...string) fiber.Handler {
 			}
 		}
 
-		return c.Status(fiber.StatusForbidden).JSON(response.Error("FORBIDDEN", "Insufficient permissions"))
+		return c.Status(fiber.StatusForbidden).JSON(response.Error("ACCESS_DENIED", "Access denied: You do not have permission to access this resource."))
 	}
 }

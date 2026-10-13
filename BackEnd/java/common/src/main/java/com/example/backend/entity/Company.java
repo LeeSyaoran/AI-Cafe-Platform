@@ -2,28 +2,18 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.Instant;
-import java.util.UUID;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "companies", indexes = {
     @Index(name = "idx_companies_slug", columnList = "slug")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Company {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Company extends BaseEntity {
 
     @Column(nullable = false)
     private String name;
@@ -47,12 +37,4 @@ public class Company {
     @Column
     @Builder.Default
     private String status = "active";
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

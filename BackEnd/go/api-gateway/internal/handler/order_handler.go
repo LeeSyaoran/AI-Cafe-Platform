@@ -1,146 +1,94 @@
 package handler
 
 import (
-	"context"
-	"time"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"aicafe-api-gateway/internal/model"
-	"aicafe-api-gateway/internal/repository"
+
+	"aicafe-api-gateway/internal/dto"
+	"aicafe-api-gateway/internal/service"
 	"aicafe-api-gateway/pkg/response"
 )
 
+// OrderHandler handles order endpoints
 type OrderHandler struct {
-	repo *repository.PostgresRepo
+	orderService *service.OrderService
 }
 
-func NewOrderHandler(repo *repository.PostgresRepo) *OrderHandler {
-	return &OrderHandler{repo: repo}
+func NewOrderHandler(orderService *service.OrderService) *OrderHandler {
+	return &OrderHandler{orderService: orderService}
 }
 
+// CreateOrder creates a new order from cart
 // POST /v1/orders
 func (h *OrderHandler) CreateOrder(c *fiber.Ctx) error {
-	var req struct {
-		CafeID      string `json:"cafeId"`
-		OrderType   string `json:"orderType"`
-		CustomerNote string `json:"customerNote"`
-		Items       []struct {
-			ProductID string `json:"productId"`
-			Quantity  int    `json:"quantity"`
-			Notes     string `json:"notes"`
-		} `json:"items"`
-	}
+	userID := c.Locals("userID").(string)
 
+	var req dto.CreateOrderRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	userID := c.Locals("userId").(string)
-	companyID := "00000000-0000-0000-0000-000000000001" // TODO: from JWT
-
-	// Generate order number
-	orderNumber := generateOrderNumber()
-
-	// TODO: Calculate totals, apply discounts, tax
-	subtotal := 0.0
-	taxRate := 0.1
-	taxAmount := subtotal * taxRate
-
-	order := &model.Order{
-		ID:            uuid.New(),
-		OrderNumber:   orderNumber,
-		UserID:        uuid.MustParse(userID),
-		CompanyID:     uuid.MustParse(companyID),
-		CafeID:        uuid.MustParse(req.CafeID),
-		OrderType:     req.OrderType,
-		Status:        "pending",
-		Subtotal:      subtotal,
-		TaxAmount:     taxAmount,
-		TotalAmount:   subtotal + taxAmount,
-		TotalPaid:     0,
-		PaymentStatus: "pending",
-		CustomerNote:  req.CustomerNote,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+	result, err := h.orderService.CreateOrderFromCart(c.Context(), userID, &req)
+	if err != nil {
+		return h.handleError(c, err)
 	}
 
-	ctx := context.Background()
-	if err := h.repo.CreateOrder(ctx, order); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("ORDER_CREATE_FAILED", err.Error()))
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(response.Success(fiber.Map{
-		"orderId":     order.ID,
-		"orderNumber": order.OrderNumber,
-		"status":      order.Status,
-	}))
+	return c.Status(fiber.StatusCreated).JSON(response.Success(result))
 }
 
+// ListOrders returns paginated orders for user
 // GET /v1/orders
 func (h *OrderHandler) ListOrders(c *fiber.Ctx) error {
-	userID := c.Locals("userId").(string)
-	limit := c.QueryInt("limit", 20)
-	offset := c.QueryInt("offset", 0)
+	userID := c.Locals("userID").(string)
 
-	ctx := context.Background()
-	orders, err := h.repo.GetOrdersByUser(ctx, uuid.MustParse(userID), limit, offset)
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit := c.QueryInt("limit", 20)
+
+	result, err := h.orderService.GetOrders(c.Context(), userID, page, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_ORDERS_FAILED", err.Error()))
+		return h.handleError(c, err)
 	}
 
-	return c.JSON(response.Success(fiber.Map{
-		"orders": orders,
-		"total":  len(orders),
-		"limit":  limit,
-		"offset": offset,
-	}))
+	return c.JSON(response.SuccessWithMeta(result.Orders, page, limit, result.Meta.Total))
 }
 
+// GetOrder returns a single order
 // GET /v1/orders/:id
 func (h *OrderHandler) GetOrder(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
 	orderID := c.Params("id")
 
-	ctx := context.Background()
-	order, err := h.repo.GetOrderByID(ctx, uuid.MustParse(orderID))
+	result, err := h.orderService.GetOrderByID(c.Context(), userID, orderID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_ORDER_FAILED", err.Error()))
-	}
-	if order == nil {
-		return c.Status(fiber.StatusNotFound).JSON(response.Error("ORDER_NOT_FOUND", "Order not found"))
+		return h.handleError(c, err)
 	}
 
-	return c.JSON(response.Success(order))
+	return c.JSON(response.Success(result))
 }
 
+// CancelOrder cancels an order
 // PUT /v1/orders/:id/cancel
 func (h *OrderHandler) CancelOrder(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
 	orderID := c.Params("id")
 
-	ctx := context.Background()
-	order, err := h.repo.GetOrderByID(ctx, uuid.MustParse(orderID))
+	var req dto.CancelOrderRequest
+	if err := c.BodyParser(&req); err != nil {
+		// Ignore parse errors for optional body
+		req = dto.CancelOrderRequest{}
+	}
+
+	result, err := h.orderService.CancelOrder(c.Context(), userID, orderID, &req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_ORDER_FAILED", err.Error()))
-	}
-	if order == nil {
-		return c.Status(fiber.StatusNotFound).JSON(response.Error("ORDER_NOT_FOUND", "Order not found"))
+		return h.handleError(c, err)
 	}
 
-	// Check if order can be cancelled
-	if order.Status != "pending" && order.Status != "confirmed" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Error("CANNOT_CANCEL", "Order cannot be cancelled"))
-	}
-
-	if err := h.repo.UpdateOrderStatus(ctx, uuid.MustParse(orderID), "cancelled"); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("CANCEL_ORDER_FAILED", err.Error()))
-	}
-
-	return c.JSON(response.Success(fiber.Map{
-		"orderId": orderID,
-		"status":  "cancelled",
-	}))
+	return c.JSON(response.Success(result))
 }
 
-func generateOrderNumber() string {
-	return time.Now().Format("20060102150405")
+// handleError converts service errors to HTTP responses
+func (h *OrderHandler) handleError(c *fiber.Ctx, err error) error {
+	// TODO: Map specific errors to proper status codes
+	return c.Status(fiber.StatusBadRequest).JSON(response.Error("ERROR", err.Error()))
 }

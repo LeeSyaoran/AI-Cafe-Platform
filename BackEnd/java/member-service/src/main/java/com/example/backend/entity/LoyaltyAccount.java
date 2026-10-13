@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,19 +10,15 @@ import java.util.UUID;
 @Entity
 @Table(name = "loyalty_accounts", indexes = {
     @Index(name = "idx_loyalty_user_id", columnList = "user_id"),
+    @Index(name = "idx_loyalty_company_id", columnList = "company_id"),
     @Index(name = "idx_loyalty_tier", columnList = "tier")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class LoyaltyAccount {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class LoyaltyAccount extends BaseEntity {
 
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
@@ -73,12 +67,4 @@ public class LoyaltyAccount {
 
     @Column(name = "tier_expires_at")
     private Instant tierExpiresAt;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

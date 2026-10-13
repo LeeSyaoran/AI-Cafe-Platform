@@ -37,22 +37,8 @@ func (r *PostgresRepo) Close() {
 	r.pool.Close()
 }
 
-// User struct for auth
-type User struct {
-	ID           string
-	Email        string
-	PasswordHash string
-	Phone        string
-	Role         string
-	Tier         string
-	Name         string
-	Status       string
-	CompanyID    string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
+// ============ User Operations ============
 
-// User operations
 func (r *PostgresRepo) CreateUser(ctx context.Context, user *model.User) error {
 	query := `
 		INSERT INTO users (id, email, password_hash, phone, role, status, created_at, updated_at)
@@ -94,14 +80,13 @@ func (r *PostgresRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*model.Us
 	return &user, err
 }
 
-// GetUserByPhone returns user by phone number
-func (r *PostgresRepo) GetUserByPhone(ctx context.Context, phone string) (*User, error) {
+func (r *PostgresRepo) GetUserByPhone(ctx context.Context, phone string) (*model.User, error) {
 	query := `
 		SELECT id, COALESCE(full_name, ''), email, phone, COALESCE(role, 'customer'), status, COALESCE(tier, 'bronze'), COALESCE(company_id::text, ''), created_at, updated_at
 		FROM users
 		WHERE phone = $1
 	`
-	var user User
+	var user model.User
 	err := r.pool.QueryRow(ctx, query, phone).Scan(
 		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Role, &user.Status, &user.Tier, &user.CompanyID, &user.CreatedAt, &user.UpdatedAt,
 	)
@@ -114,8 +99,7 @@ func (r *PostgresRepo) GetUserByPhone(ctx context.Context, phone string) (*User,
 	return &user, nil
 }
 
-// FindOrCreateUserByPhone finds existing user or creates new one
-func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string) (*User, error) {
+func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string) (*model.User, error) {
 	log.Printf("[DEBUG] FindOrCreateUserByPhone called for phone: %s", phone)
 
 	// Try to find existing user
@@ -124,7 +108,6 @@ func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string
 		log.Printf("[ERROR] GetUserByPhone failed for %s: %v", phone, err)
 		return nil, err
 	}
-	log.Printf("[DEBUG] GetUserByPhone result: %+v", user)
 
 	if user != nil {
 		log.Printf("[DEBUG] User found, returning existing user")
@@ -134,7 +117,7 @@ func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string
 	log.Printf("[DEBUG] User not found, creating new user")
 
 	// Get default company
-	var companyID string
+	var companyID uuid.UUID
 	err = r.pool.QueryRow(ctx, `SELECT id FROM companies LIMIT 1`).Scan(&companyID)
 	if err != nil {
 		log.Printf("[ERROR] Failed to get company: %v", err)
@@ -142,7 +125,7 @@ func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string
 	}
 
 	// Create new user with password_hash = 'otp_auth'
-	newID := uuid.New().String()
+	newID := uuid.New()
 	insertQuery := `
 		INSERT INTO users (id, phone, email, role, status, tier, company_id, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, 'active', 'bronze', $5, 'otp_auth', NOW(), NOW())
@@ -164,14 +147,11 @@ func (r *PostgresRepo) FindOrCreateUserByPhone(ctx context.Context, phone string
 		log.Printf("[ERROR] GetUserByPhone after insert failed: %v", err)
 		return nil, err
 	}
-	log.Printf("[DEBUG] Final user: %+v", user)
 
 	return user, nil
 }
 
-// UpdateUser updates user profile
 func (r *PostgresRepo) UpdateUser(ctx context.Context, userID, name, email string) error {
-	// Update users table
 	if email != "" {
 		query := `UPDATE users SET email = $1, updated_at = NOW() WHERE id = $2`
 		_, err := r.pool.Exec(ctx, query, email, userID)
@@ -180,7 +160,6 @@ func (r *PostgresRepo) UpdateUser(ctx context.Context, userID, name, email strin
 		}
 	}
 
-	// Update user name in users table
 	if name != "" {
 		query := `UPDATE users SET full_name = $1, updated_at = NOW() WHERE id = $2`
 		_, err := r.pool.Exec(ctx, query, name, userID)
@@ -192,21 +171,20 @@ func (r *PostgresRepo) UpdateUser(ctx context.Context, userID, name, email strin
 	return nil
 }
 
-// GetUserByIDString returns user by ID string
-func (r *PostgresRepo) GetUserByIDString(ctx context.Context, userID string) (*User, error) {
+func (r *PostgresRepo) GetUserByIDString(ctx context.Context, userID string) (*model.User, error) {
 	id, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	query := `
-		SELECT id, COALESCE(full_name, ''), email, phone, COALESCE(role, 'customer'), status
+		SELECT id, COALESCE(full_name, ''), email, phone, COALESCE(role, 'customer'), status, COALESCE(tier, 'bronze'), COALESCE(company_id::text, ''), created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
-	var user User
+	var user model.User
 	err = r.pool.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Role, &user.Status,
+		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Role, &user.Status, &user.Tier, &user.CompanyID, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -214,11 +192,11 @@ func (r *PostgresRepo) GetUserByIDString(ctx context.Context, userID string) (*U
 	if err != nil {
 		return nil, err
 	}
-	user.Tier = "BASIC"
 	return &user, nil
 }
 
-// Company operations
+// ============ Company Operations ============
+
 func (r *PostgresRepo) GetCompanyByID(ctx context.Context, id uuid.UUID) (*model.Company, error) {
 	query := `
 		SELECT id, company_code, name, legal_name, tax_id, address, phone, email, status, created_at, updated_at
@@ -235,7 +213,8 @@ func (r *PostgresRepo) GetCompanyByID(ctx context.Context, id uuid.UUID) (*model
 	return &c, err
 }
 
-// Cafe operations
+// ============ Cafe Operations ============
+
 func (r *PostgresRepo) GetCafes(ctx context.Context, companyID uuid.UUID) ([]model.Cafe, error) {
 	query := `
 		SELECT id, company_id, region_id, cafe_code, name, slug, description, address, phone,
@@ -283,7 +262,8 @@ func (r *PostgresRepo) GetCafeByID(ctx context.Context, id uuid.UUID) (*model.Ca
 	return &c, err
 }
 
-// Category operations
+// ============ Category Operations ============
+
 func (r *PostgresRepo) GetCategories(ctx context.Context, companyID uuid.UUID) ([]model.Category, error) {
 	query := `
 		SELECT id, company_id, name, slug, icon, color, sort_order, is_featured, is_active
@@ -308,7 +288,8 @@ func (r *PostgresRepo) GetCategories(ctx context.Context, companyID uuid.UUID) (
 	return categories, nil
 }
 
-// Product operations
+// ============ Product Operations ============
+
 func (r *PostgresRepo) GetProducts(ctx context.Context, companyID uuid.UUID, categoryID *uuid.UUID, search string, limit, offset int) ([]model.Product, error) {
 	query := `
 		SELECT p.id, p.company_id, p.category_id, p.name, p.name_vi, p.slug, p.sku,
@@ -397,7 +378,8 @@ func (r *PostgresRepo) GetProductByID(ctx context.Context, id uuid.UUID) (*model
 	return &p, nil
 }
 
-// Order operations
+// ============ Order Operations ============
+
 func (r *PostgresRepo) CreateOrder(ctx context.Context, order *model.Order) error {
 	query := `
 		INSERT INTO orders (id, order_number, user_id, company_id, cafe_id, seat_id, order_type,
@@ -472,7 +454,8 @@ func (r *PostgresRepo) GetOrdersByUser(ctx context.Context, userID uuid.UUID, li
 	return orders, nil
 }
 
-// Cart operations
+// ============ Cart Operations ============
+
 func (r *PostgresRepo) GetCart(ctx context.Context, userID, cafeID uuid.UUID) (*model.Cart, error) {
 	query := `
 		SELECT id, user_id, company_id, cafe_id, subtotal, item_count, expires_at, created_at, updated_at
@@ -524,4 +507,72 @@ func (r *PostgresRepo) GetCartItems(ctx context.Context, cartID uuid.UUID) ([]mo
 		items = append(items, item)
 	}
 	return items, nil
+}
+
+// ============ Credit Operations ============
+
+func (r *PostgresRepo) GetCreditBalance(ctx context.Context, userID uuid.UUID) (float64, error) {
+	query := `SELECT COALESCE(balance, 0) FROM user_credits WHERE user_id = $1`
+	var balance float64
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&balance)
+	if err == pgx.ErrNoRows {
+		return 0, nil
+	}
+	return balance, err
+}
+
+func (r *PostgresRepo) GetCreditTransactions(ctx context.Context, userID uuid.UUID, limit, offset int) ([]model.CreditTransaction, error) {
+	query := `
+		SELECT id, user_id, amount, balance_after, type, reference_id, description, created_at
+		FROM credit_transactions
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.pool.Query(ctx, query, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var transactions []model.CreditTransaction
+	for rows.Next() {
+		var tx model.CreditTransaction
+		err := rows.Scan(
+			&tx.ID, &tx.UserID, &tx.Amount, &tx.BalanceAfter,
+			&tx.Type, &tx.ReferenceID, &tx.Description, &tx.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, tx)
+	}
+	return transactions, nil
+}
+
+// ============ OTP Operations (Placeholder for Redis) ============
+
+func (r *PostgresRepo) SetOTP(ctx context.Context, phone, otp string, expiry time.Duration) error {
+	// TODO: Implement with Redis in production
+	return nil
+}
+
+func (r *PostgresRepo) GetOTP(ctx context.Context, phone string) (string, error) {
+	// TODO: Implement with Redis in production
+	return "", nil
+}
+
+func (r *PostgresRepo) DeleteOTP(ctx context.Context, phone string) error {
+	// TODO: Implement with Redis in production
+	return nil
+}
+
+func (r *PostgresRepo) IncrementOTPAttempts(ctx context.Context, phone string) (int, error) {
+	// TODO: Implement with Redis in production
+	return 0, nil
+}
+
+func (r *PostgresRepo) LockOTP(ctx context.Context, phone string, duration time.Duration) error {
+	// TODO: Implement with Redis in production
+	return nil
 }

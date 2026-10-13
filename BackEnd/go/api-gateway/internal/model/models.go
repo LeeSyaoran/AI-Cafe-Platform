@@ -6,17 +6,24 @@ import (
 	"github.com/google/uuid"
 )
 
+// User represents a user in the system
 type User struct {
-	ID           uuid.UUID  `json:"id"`
-	Email        string    `json:"email"`
+	ID            uuid.UUID `json:"id"`
+	Email         string    `json:"email"`
 	PasswordHash string    `json:"-"`
-	Phone        string    `json:"phone,omitempty"`
-	Role         string    `json:"role"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	Phone         string    `json:"phone,omitempty"`
+	Role          string    `json:"role"`
+	Status        string    `json:"status"`
+	Tier          string    `json:"tier"`
+	CompanyID     uuid.UUID `json:"companyId,omitempty"`
+	Name          string    `json:"name,omitempty"`
+	EmailVerified  bool      `json:"emailVerified,omitempty"`
+	PhoneVerified  bool      `json:"phoneVerified,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
+// UserProfile represents extended user profile
 type UserProfile struct {
 	UserID      uuid.UUID `json:"userId"`
 	FullName    string    `json:"fullName"`
@@ -28,20 +35,22 @@ type UserProfile struct {
 	Timezone    string    `json:"timezone"`
 }
 
+// Company represents a company/tenant
 type Company struct {
-	ID           uuid.UUID `json:"id"`
-	CompanyCode  string    `json:"companyCode"`
-	Name         string    `json:"name"`
-	LegalName    string    `json:"legalName"`
-	TaxID        string    `json:"taxId"`
-	Address      string    `json:"address"`
-	Phone        string    `json:"phone"`
-	Email        string    `json:"email"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID          uuid.UUID `json:"id"`
+	CompanyCode string    `json:"companyCode"`
+	Name        string    `json:"name"`
+	LegalName   string    `json:"legalName"`
+	TaxID       string    `json:"taxId"`
+	Address     string    `json:"address"`
+	Phone       string    `json:"phone"`
+	Email       string    `json:"email"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+// Cafe represents a physical cafe location
 type Cafe struct {
 	ID                uuid.UUID `json:"id"`
 	CompanyID         uuid.UUID `json:"companyId"`
@@ -55,22 +64,24 @@ type Cafe struct {
 	IsActive          bool      `json:"isActive"`
 	IsDeliveryEnabled bool      `json:"isDeliveryEnabled"`
 	IsPickupEnabled   bool      `json:"isPickupEnabled"`
-	TaxRate           float64   `json:"taxRate"`
+	TaxRate          float64   `json:"taxRate"`
 	CreatedAt         time.Time `json:"createdAt"`
 }
 
+// Category represents a product category
 type Category struct {
-	ID        uuid.UUID `json:"id"`
-	CompanyID uuid.UUID `json:"companyId"`
-	Name      string    `json:"name"`
-	Slug      string    `json:"slug"`
-	Icon      string    `json:"icon"`
-	Color     string    `json:"color"`
-	SortOrder int       `json:"sortOrder"`
-	IsFeatured bool     `json:"isFeatured"`
-	IsActive   bool     `json:"isActive"`
+	ID         uuid.UUID `json:"id"`
+	CompanyID  uuid.UUID `json:"companyId"`
+	Name       string    `json:"name"`
+	Slug       string    `json:"slug"`
+	Icon       string    `json:"icon"`
+	Color      string    `json:"color"`
+	SortOrder  int       `json:"sortOrder"`
+	IsFeatured bool      `json:"isFeatured"`
+	IsActive   bool      `json:"isActive"`
 }
 
+// Product represents a product/menu item
 type Product struct {
 	ID              uuid.UUID  `json:"id"`
 	CompanyID       uuid.UUID  `json:"companyId"`
@@ -80,7 +91,7 @@ type Product struct {
 	Slug            string     `json:"slug"`
 	SKU             string     `json:"sku"`
 	Description     string     `json:"description"`
-	ShortDesc      string     `json:"shortDesc"`
+	ShortDesc       string     `json:"shortDesc"`
 	Price           float64    `json:"price"`
 	Images          []string   `json:"images"`
 	Calories        int        `json:"calories"`
@@ -93,26 +104,28 @@ type Product struct {
 	Category        *Category  `json:"category,omitempty"`
 }
 
+// Order represents a customer order
 type Order struct {
-	ID            uuid.UUID  `json:"id"`
-	OrderNumber   string     `json:"orderNumber"`
-	UserID        uuid.UUID  `json:"userId"`
-	CompanyID     uuid.UUID  `json:"companyId"`
-	CafeID        uuid.UUID  `json:"cafeId"`
-	SeatID        *uuid.UUID `json:"seatId,omitempty"`
-	OrderType     string     `json:"orderType"`
-	Status        string     `json:"status"`
-	Subtotal      float64    `json:"subtotal"`
+	ID             uuid.UUID  `json:"id"`
+	OrderNumber    string     `json:"orderNumber"`
+	UserID         uuid.UUID  `json:"userId"`
+	CompanyID      uuid.UUID  `json:"companyId"`
+	CafeID         uuid.UUID  `json:"cafeId"`
+	SeatID         *uuid.UUID `json:"seatId,omitempty"`
+	OrderType      string     `json:"orderType"`
+	Status         string     `json:"status"`
+	Subtotal       float64    `json:"subtotal"`
 	DiscountAmount float64    `json:"discountAmount"`
-	TaxAmount     float64    `json:"taxAmount"`
-	TotalAmount   float64    `json:"totalAmount"`
-	TotalPaid     float64    `json:"totalPaid"`
-	PaymentStatus string     `json:"paymentStatus"`
-	CustomerNote  string     `json:"customerNote"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	TaxAmount      float64    `json:"taxAmount"`
+	TotalAmount    float64    `json:"totalAmount"`
+	TotalPaid      float64    `json:"totalPaid"`
+	PaymentStatus  string     `json:"paymentStatus"`
+	CustomerNote   string     `json:"customerNote"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
 }
 
+// OrderItem represents an item in an order
 type OrderItem struct {
 	ID           uuid.UUID `json:"id"`
 	OrderID      uuid.UUID `json:"orderId"`
@@ -128,21 +141,23 @@ type OrderItem struct {
 	ItemStatus   string    `json:"itemStatus"`
 }
 
+// Cart represents a user's shopping cart
 type Cart struct {
-	ID         uuid.UUID  `json:"id"`
-	UserID     uuid.UUID  `json:"userId"`
-	CompanyID  uuid.UUID  `json:"companyId"`
-	CafeID     uuid.UUID  `json:"cafeId"`
-	Subtotal   float64    `json:"subtotal"`
-	ItemCount  int        `json:"itemCount"`
-	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
+	ID        uuid.UUID  `json:"id"`
+	UserID    uuid.UUID  `json:"userId"`
+	CompanyID uuid.UUID  `json:"companyId"`
+	CafeID    uuid.UUID  `json:"cafeId"`
+	Subtotal  float64    `json:"subtotal"`
+	ItemCount int        `json:"itemCount"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
+// CartItem represents an item in a cart
 type CartItem struct {
-	ID           uuid.UUID `json:"id"`
-	CartID      uuid.UUID `json:"cartId"`
+	ID            uuid.UUID `json:"id"`
+	CartID       uuid.UUID `json:"cartId"`
 	ProductID    uuid.UUID `json:"productId"`
 	VariantID    uuid.UUID `json:"variantId,omitempty"`
 	Quantity     int       `json:"quantity"`
@@ -152,4 +167,27 @@ type CartItem struct {
 	LineTotal   float64   `json:"lineTotal"`
 	Notes        string    `json:"notes"`
 	CreatedAt   time.Time  `json:"createdAt"`
+}
+
+// UserCredit represents a user's credit balance
+type UserCredit struct {
+	ID             uuid.UUID `json:"id"`
+	UserID         uuid.UUID `json:"userId"`
+	Balance        float64   `json:"balance"`
+	PendingBalance float64   `json:"pendingBalance"`
+	LifetimeSpent  float64   `json:"lifetimeSpent"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
+// CreditTransaction represents a credit transaction
+type CreditTransaction struct {
+	ID           uuid.UUID `json:"id"`
+	UserID       uuid.UUID `json:"userId"`
+	Amount       float64   `json:"amount"`
+	BalanceAfter float64   `json:"balanceAfter"`
+	Type         string    `json:"type"` // deduct, topup, refund, promotion
+	ReferenceID  string    `json:"referenceId"`
+	Description  string    `json:"description"`
+	CreatedAt    time.Time `json:"createdAt"`
 }

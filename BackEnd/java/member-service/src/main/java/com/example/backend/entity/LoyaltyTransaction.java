@@ -2,8 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,17 +13,12 @@ import java.util.UUID;
     @Index(name = "idx_loyalty_txn_type", columnList = "type"),
     @Index(name = "idx_loyalty_txn_created", columnList = "created_at")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class LoyaltyTransaction {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class LoyaltyTransaction extends BaseCreatedEntity {
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -56,8 +50,4 @@ public class LoyaltyTransaction {
 
     @Column(name = "expired_at")
     private Instant expiredAt;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
 }

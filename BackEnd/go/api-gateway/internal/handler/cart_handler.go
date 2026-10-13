@@ -1,143 +1,139 @@
 package handler
 
 import (
-	"context"
-	"time"
-
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"aicafe-api-gateway/internal/model"
-	"aicafe-api-gateway/internal/repository"
+
+	"aicafe-api-gateway/internal/dto"
+	"aicafe-api-gateway/internal/service"
 	"aicafe-api-gateway/pkg/response"
 )
 
+// CartHandler handles cart endpoints
 type CartHandler struct {
-	repo *repository.PostgresRepo
+	cartService  *service.CartService
+	orderService *service.OrderService
 }
 
-func NewCartHandler(repo *repository.PostgresRepo) *CartHandler {
-	return &CartHandler{repo: repo}
+func NewCartHandler(cartService *service.CartService, orderService *service.OrderService) *CartHandler {
+	return &CartHandler{
+		cartService:  cartService,
+		orderService: orderService,
+	}
 }
 
+// GetCart returns user's cart
 // GET /v1/cart
 func (h *CartHandler) GetCart(c *fiber.Ctx) error {
-	userID := c.Locals("userId").(string)
+	userID := c.Locals("userID").(string)
 	cafeID := c.Query("cafeId", "00000000-0000-0000-0000-000000000001")
 
-	ctx := context.Background()
-	cart, err := h.repo.GetCart(ctx, uuid.MustParse(userID), uuid.MustParse(cafeID))
+	result, err := h.cartService.GetCart(c.Context(), userID, cafeID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_CART_FAILED", err.Error()))
-	}
-	if cart == nil {
-		return c.JSON(response.Success(fiber.Map{
-			"id":        nil,
-			"items":     []interface{}{},
-			"subtotal":  0,
-			"itemCount": 0,
-		}))
+		return h.handleError(c, err)
 	}
 
-	// Get cart items
-	items, err := h.repo.GetCartItems(ctx, cart.ID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_CART_ITEMS_FAILED", err.Error()))
-	}
-
-	return c.JSON(response.Success(fiber.Map{
-		"id":        cart.ID,
-		"items":     items,
-		"subtotal":  cart.Subtotal,
-		"itemCount": cart.ItemCount,
-	}))
+	return c.JSON(response.Success(result))
 }
 
+// AddItem adds an item to cart
 // POST /v1/cart/items
 func (h *CartHandler) AddItem(c *fiber.Ctx) error {
-	var req struct {
-		ProductID string `json:"productId"`
-		CafeID   string `json:"cafeId"`
-		Quantity int    `json:"quantity"`
-		Notes    string `json:"notes"`
-	}
+	userID := c.Locals("userID").(string)
 
+	var req dto.AddCartItemRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	userID := c.Locals("userId").(string)
-	companyID := "00000000-0000-0000-0000-000000000001"
-
-	ctx := context.Background()
-
-	// Get or create cart
-	cart, err := h.repo.GetCart(ctx, uuid.MustParse(userID), uuid.MustParse(req.CafeID))
+	result, err := h.cartService.AddItem(c.Context(), userID, &req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("FETCH_CART_FAILED", err.Error()))
+		return h.handleError(c, err)
 	}
 
-	if cart == nil {
-		cart = &model.Cart{
-			ID:        uuid.New(),
-			UserID:    uuid.MustParse(userID),
-			CompanyID: uuid.MustParse(companyID),
-			CafeID:    uuid.MustParse(req.CafeID),
-			Subtotal:  0,
-			ItemCount: 0,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		if err := h.repo.CreateCart(ctx, cart); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.Error("CREATE_CART_FAILED", err.Error()))
-		}
-	}
-
-	// TODO: Add item to cart, calculate totals
-	return c.Status(fiber.StatusCreated).JSON(response.Success(fiber.Map{
-		"cartId": cart.ID,
-		"message": "Item added to cart",
-	}))
+	return c.Status(fiber.StatusCreated).JSON(response.Success(result))
 }
 
+// UpdateItem updates a cart item
 // PUT /v1/cart/items/:id
 func (h *CartHandler) UpdateItem(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
 	itemID := c.Params("id")
-	return c.JSON(response.Success(fiber.Map{
-		"itemId": itemID,
-		"message": "Cart item updated",
-	}))
+
+	var req dto.UpdateCartItemRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
+	}
+
+	result, err := h.cartService.UpdateItem(c.Context(), userID, itemID, &req)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
+	return c.JSON(response.Success(result))
 }
 
+// RemoveItem removes an item from cart
 // DELETE /v1/cart/items/:id
 func (h *CartHandler) RemoveItem(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
 	itemID := c.Params("id")
+
+	err := h.cartService.RemoveItem(c.Context(), userID, itemID)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
 	return c.JSON(response.Success(fiber.Map{
-		"itemId": itemID,
-		"message": "Cart item removed",
+		"message": "Item removed from cart",
 	}))
 }
 
-// POST /v1/cart/clear
+// ClearCart clears all items from cart
+// DELETE /v1/cart
 func (h *CartHandler) ClearCart(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	cafeID := c.Query("cafeId", "00000000-0000-0000-0000-000000000001")
+
+	err := h.cartService.ClearCart(c.Context(), userID, cafeID)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
 	return c.JSON(response.Success(fiber.Map{
 		"message": "Cart cleared",
 	}))
 }
 
+// Checkout creates order from cart
 // POST /v1/cart/checkout
 func (h *CartHandler) Checkout(c *fiber.Ctx) error {
-	var req struct {
-		PaymentMethod string `json:"paymentMethod"`
-	}
+	userID := c.Locals("userID").(string)
 
+	var req dto.CheckoutRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	// TODO: Implement checkout logic
-	return c.Status(fiber.StatusCreated).JSON(response.Success(fiber.Map{
-		"orderId": uuid.New(),
-		"message": "Checkout initiated",
-		"paymentMethod": req.PaymentMethod,
-	}))
+	// Use OrderService for checkout
+	createReq := &dto.CreateOrderRequest{
+		CafeID:           req.CafeID,
+		OrderType:        req.OrderType,
+		DeliveryAddressID: req.DeliveryAddressID,
+		CustomerNote:     req.CustomerNote,
+		PromoCode:        req.PromoCode,
+		PaymentMethod:    req.PaymentMethod,
+	}
+
+	result, err := h.orderService.CreateOrderFromCart(c.Context(), userID, createReq)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response.Success(result))
+}
+
+// handleError converts service errors to HTTP responses
+func (h *CartHandler) handleError(c *fiber.Ctx, err error) error {
+	// TODO: Map specific errors to proper status codes
+	return c.Status(fiber.StatusBadRequest).JSON(response.Error("ERROR", err.Error()))
 }

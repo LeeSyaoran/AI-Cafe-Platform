@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -13,17 +11,12 @@ import java.util.UUID;
 @Table(name = "user_credits", indexes = {
     @Index(name = "idx_user_credits_user_id", columnList = "user_id")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class UserCredit {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class UserCredit extends BaseEntity {
 
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
@@ -42,12 +35,4 @@ public class UserCredit {
 
     @Column(name = "last_transaction_at")
     private Instant lastTransactionAt;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

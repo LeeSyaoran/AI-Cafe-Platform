@@ -1,11 +1,14 @@
-package com.example.backend;
+package com.example.backend.service;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.example.backend.dto.response.CafeBranchResponse;
+import com.example.backend.entity.Cafe;
 
-@SpringBootApplication
-public class CafeService {
-    public static void main(String[] args) {
-        SpringApplication.run(CafeService.class, args);
-    }
+import java.util.List;
+import java.util.UUID;
+
+public interface CafeService {
+    List<Cafe> getCafesByCompany(UUID companyId);
+    Cafe getCafeById(UUID id);
+    Cafe getCafeBySlug(String slug);
+    List<CafeBranchResponse> searchCafes(UUID companyId, String province, String search);
 }

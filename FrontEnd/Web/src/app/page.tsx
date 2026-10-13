@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { getCategories, getProducts } from '@/services/api/endpoints/menu';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Star, Clock, Flame, Search, ChevronRight } from 'lucide-react';
+import { Plus, Star, Clock, Flame, Search, ChevronRight, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import type { Product, Category } from '@/types';
 
@@ -87,9 +87,11 @@ function MenuSkeleton() {
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const { items } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -116,90 +118,208 @@ export default function HomePage() {
     enabled: isAuthenticated,
   });
 
+  // Get dashboard link based on role
+  const getDashboardLink = () => {
+    switch (user?.role) {
+      case 'admin': return '/admin';
+      case 'manager': return '/manager';
+      case 'staff': return '/staff';
+      case 'cashier': return '/cashier';
+      default: return null;
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
   if (!isAuthenticated) {
     return null;
   }
 
+  const dashboardLink = getDashboardLink();
+
   return (
-    <div className="px-4 py-4">
-      {/* Welcome */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">
-          Hello{user?.name ? `, ${user.name}` : ''}! 👋
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">What would you like to order today?</p>
-      </div>
+    <div className="min-h-screen bg-[#0B0F19] pb-20">
+      {/* Header */}
+      <header className="sticky top-0 bg-[#0B0F19]/95 backdrop-blur-lg border-b border-[#334155] z-50">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-4">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#5A6BFF] to-[#8B5CF6] rounded-xl flex items-center justify-center">
+                <span className="text-lg">☕</span>
+              </div>
+              <span className="text-white font-bold text-lg">AI Café</span>
+            </Link>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search for coffee, tea, or snacks..."
-          className="w-full bg-[#1E293B] border border-[#334155] rounded-2xl pl-12 pr-4 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#5A6BFF] transition-colors"
-        />
-      </div>
+            {/* Right Side */}
+            <div className="flex items-center gap-3">
+              {/* Cart */}
+              <Link
+                href="/cart"
+                className="relative w-10 h-10 bg-[#1E293B] rounded-xl flex items-center justify-center"
+              >
+                <span className="text-lg">🛒</span>
+                {items.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#5A6BFF] rounded-full text-white text-xs flex items-center justify-center font-bold">
+                    {items.length}
+                  </span>
+                )}
+              </Link>
 
-      {/* Categories */}
-      <div className="flex gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-            !selectedCategory
-              ? 'bg-[#5A6BFF] text-white'
-              : 'bg-[#1E293B] text-gray-400 hover:bg-[#334155]'
-          }`}
-        >
-          All
-        </button>
-        {categoriesData?.data?.map((category: Category) => (
-          <CategoryChip
-            key={category.id}
-            category={category}
-            isActive={selectedCategory === category.id}
-            onClick={() => setSelectedCategory(category.id)}
-          />
-        ))}
-      </div>
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="w-10 h-10 bg-[#1E293B] rounded-xl flex items-center justify-center"
+                >
+                  <User className="w-5 h-5 text-gray-400" />
+                </button>
 
-      {/* Best Sellers Banner */}
-      {!selectedCategory && !searchQuery && (
-        <div className="bg-gradient-to-r from-[#5A6BFF] to-[#8B5CF6] rounded-2xl p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Flame className="w-6 h-6 text-white" />
+                {/* Dropdown */}
+                {showUserMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                    <div className="absolute right-0 top-12 w-64 bg-[#1E293B] rounded-xl border border-[#334155] shadow-xl z-50 overflow-hidden">
+                      {/* User Info */}
+                      <div className="p-4 border-b border-[#334155]">
+                        <p className="text-white font-medium">{user?.name || 'User'}</p>
+                        <p className="text-gray-400 text-sm">{user?.email}</p>
+                        <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium ${
+                          user?.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
+                          user?.role === 'manager' ? 'bg-blue-500/20 text-blue-400' :
+                          user?.role === 'staff' ? 'bg-green-500/20 text-green-400' :
+                          user?.role === 'cashier' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {user?.role === 'admin' ? 'Quản trị viên' :
+                           user?.role === 'manager' ? 'Quản lý' :
+                           user?.role === 'staff' ? 'Nhân viên' :
+                           user?.role === 'cashier' ? 'Thu ngân' :
+                           'Khách hàng'}
+                        </span>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="p-2">
+                        {dashboardLink && (
+                          <Link
+                            href={dashboardLink}
+                            className="flex items-center gap-3 px-3 py-2 text-gray-400 hover:text-white hover:bg-[#334155] rounded-lg transition-colors"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Dashboard
+                          </Link>
+                        )}
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-3 px-3 py-2 text-gray-400 hover:text-white hover:bg-[#334155] rounded-lg transition-colors"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <User className="w-4 h-4" />
+                          Hồ sơ
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Đăng xuất
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="text-white font-bold">Best Sellers 🔥</h3>
-              <p className="text-white/80 text-sm">Try our most popular drinks!</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-white" />
+          </div>
+
+          {/* Welcome */}
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-white">
+              Xin chào{user?.name ? `, ${user.name}` : ''}! 👋
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Bạn muốn đặt gì hôm nay?</p>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm cà phê, trà..."
+              className="w-full bg-[#1E293B] border border-[#334155] rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#5A6BFF] transition-colors"
+            />
           </div>
         </div>
-      )}
+      </header>
 
-      {/* Products Grid */}
-      {isLoading ? (
-        <MenuSkeleton />
-      ) : productsData?.data && productsData.data.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3">
-          {productsData.data.map((product: Product) => (
-            <ProductCard key={product.id} product={product} />
+      {/* Content */}
+      <div className="px-4 py-4">
+        {/* Categories */}
+        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              !selectedCategory
+                ? 'bg-[#5A6BFF] text-white'
+                : 'bg-[#1E293B] text-gray-400 hover:bg-[#334155]'
+            }`}
+          >
+            Tất cả
+          </button>
+          {categoriesData?.data?.map((category: Category) => (
+            <CategoryChip
+              key={category.id}
+              category={category}
+              isActive={selectedCategory === category.id}
+              onClick={() => setSelectedCategory(category.id)}
+            />
           ))}
         </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-[#1E293B] rounded-full mx-auto mb-4 flex items-center justify-center">
-            <span className="text-3xl">☕</span>
+
+        {/* Best Sellers Banner */}
+        {!selectedCategory && !searchQuery && (
+          <div className="bg-gradient-to-r from-[#5A6BFF] to-[#8B5CF6] rounded-2xl p-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Flame className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold">Bán chạy nhất 🔥</h3>
+                <p className="text-white/80 text-sm">Thử ngay những món được yêu thích nhất!</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white" />
+            </div>
           </div>
-          <h3 className="text-white font-semibold mb-2">No products found</h3>
-          <p className="text-gray-400 text-sm">
-            {searchQuery ? 'Try a different search term' : 'No menu items available'}
-          </p>
-        </div>
-      )}
+        )}
+
+        {/* Products Grid */}
+        {isLoading ? (
+          <MenuSkeleton />
+        ) : productsData?.data && productsData.data.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {productsData.data.map((product: Product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-[#1E293B] rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-3xl">☕</span>
+            </div>
+            <h3 className="text-white font-semibold mb-2">Không tìm thấy sản phẩm</h3>
+            <p className="text-gray-400 text-sm">
+              {searchQuery ? 'Thử từ khóa khác' : 'Chưa có menu nào'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

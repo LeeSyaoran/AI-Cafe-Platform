@@ -9,6 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface LoyaltyAccountRepository extends JpaRepository<LoyaltyAccount, UUID> {
-
     Optional<LoyaltyAccount> findByUserId(UUID userId);
 }

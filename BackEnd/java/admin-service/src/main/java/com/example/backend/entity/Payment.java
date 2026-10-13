@@ -2,9 +2,7 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,17 +13,12 @@ import java.util.UUID;
     @Index(name = "idx_payments_order_id", columnList = "order_id"),
     @Index(name = "idx_payments_status", columnList = "status")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Payment extends BaseEntity {
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -40,11 +33,11 @@ public class Payment {
     private Double amount;
 
     @Column(nullable = false)
-    private String method; // cash, momo, vnpay, Zalopay, card
+    private String method;
 
     @Column(nullable = false)
     @Builder.Default
-    private String status = "pending"; // pending, processing, completed, failed, refunded
+    private String status = "pending";
 
     @Column(name = "transaction_id")
     private String transactionId;
@@ -57,12 +50,4 @@ public class Payment {
 
     @Column(name = "paid_at")
     private Instant paidAt;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 }

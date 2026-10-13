@@ -1,44 +1,29 @@
 package handler
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"math/rand"
-	"time"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 
-	"aicafe-api-gateway/internal/config"
-	"aicafe-api-gateway/internal/repository"
+	"aicafe-api-gateway/internal/dto"
+	apperrors "aicafe-api-gateway/internal/errors"
+	"aicafe-api-gateway/internal/service"
 	"aicafe-api-gateway/pkg/response"
 )
 
-// OTP Store (in-memory for demo, use Redis in production)
-var otpStore = make(map[string]*OTPEntry)
-
-type OTPEntry struct {
-	Code      string
-	ExpiresAt time.Time
-	Attempts  int
-	Verified  bool
-}
-
+// AuthHandler handles authentication endpoints
 type AuthHandler struct {
-	repo *repository.PostgresRepo
-	jwt  config.JWTConfig
+	authService *service.AuthService
 }
 
-func NewAuthHandler(repo *repository.PostgresRepo, jwt config.JWTConfig) *AuthHandler {
-	return &AuthHandler{repo: repo, jwt: jwt}
+func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
 }
 
+// SendOTP sends OTP to phone number
 // POST /v1/auth/send-otp
 func (h *AuthHandler) SendOTP(c *fiber.Ctx) error {
-	var req struct {
-		Phone string `json:"phone"`
-	}
+	var req dto.SendOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
@@ -47,210 +32,161 @@ func (h *AuthHandler) SendOTP(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("PHONE_REQUIRED", "Phone number is required"))
 	}
 
-	// Generate 6-digit OTP
-	otp := generateOTP()
-	otpStore[req.Phone] = &OTPEntry{
-		Code:      otp,
-		ExpiresAt: time.Now().Add(5 * time.Minute),
-		Attempts:  0,
-		Verified:  false,
+	result, err := h.authService.SendOTP(c.Context(), req.Phone)
+	if err != nil {
+		return h.handleError(c, err)
 	}
 
-	// Debug: Print OTP to console (REMOVE IN PRODUCTION!)
-	fmt.Printf("[DEBUG] OTP for %s: %s\n", req.Phone, otp)
-
-	return c.JSON(response.Success(fiber.Map{
-		"message":            "OTP sent successfully",
-		"expires_in":         300,
-		"resend_available_in": 60,
-		"_debug_otp":         otp, // DEBUG: Remove in production!
-	}))
+	return c.JSON(response.Success(result))
 }
 
+// VerifyOTP verifies OTP and returns tokens
 // POST /v1/auth/verify-otp
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
-	var req struct {
-		Phone string `json:"phone"`
-		Code  string `json:"code"`
-	}
+	var req dto.VerifyOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	entry, exists := otpStore[req.Phone]
-	if !exists {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_NOT_FOUND", "No OTP found for this phone"))
-	}
-
-	if time.Now().After(entry.ExpiresAt) {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_EXPIRED", "OTP has expired"))
-	}
-
-	if entry.Code != req.Code {
-		entry.Attempts++
-		if entry.Attempts >= 3 {
-			delete(otpStore, req.Phone)
-			return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_LOCKED", "Too many attempts. Please request a new OTP"))
-		}
-		return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_INVALID", "Invalid OTP code"))
-	}
-
-	entry.Verified = true
-
-	// Find or create user
-	user, err := h.repo.FindOrCreateUserByPhone(c.Context(), req.Phone)
+	result, err := h.authService.VerifyOTP(c.Context(), req.Phone, req.Code)
 	if err != nil {
-		log.Printf("[ERROR] FindOrCreateUserByPhone failed for %s: %v", req.Phone, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("USER_ERROR", "Failed to process user: "+err.Error()))
+		return h.handleError(c, err)
 	}
 
-	// Generate JWT tokens
-	accessToken, err := h.generateAccessToken(user)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("TOKEN_ERROR", "Failed to generate token"))
-	}
-
-	refreshToken, err := h.generateRefreshToken(user)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("TOKEN_ERROR", "Failed to generate refresh token"))
-	}
-
-	// Clean up OTP
-	delete(otpStore, req.Phone)
-
-	return c.JSON(response.Success(fiber.Map{
-		"tokens": fiber.Map{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
-			"expires_in":    h.jwt.AccessTokenExpiration,
-			"token_type":    "Bearer",
-		},
-		"user": fiber.Map{
-			"id":    user.ID,
-			"phone": user.Phone,
-			"name":  user.Name,
-			"email": user.Email,
-			"role":  user.Role,
-			"tier":  user.Tier,
-		},
-	}))
+	return c.JSON(response.Success(result))
 }
 
+// Register creates a new user account
+// POST /v1/auth/register
+func (h *AuthHandler) Register(c *fiber.Ctx) error {
+	var req dto.RegisterRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
+	}
+
+	result, err := h.authService.Register(c.Context(), &req)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response.Success(result))
+}
+
+// Login authenticates user with email/password
+// POST /v1/auth/login
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
+	var req dto.LoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
+	}
+
+	result, err := h.authService.Login(c.Context(), &req)
+	if err != nil {
+		return h.handleError(c, err)
+	}
+
+	return c.JSON(response.Success(result))
+}
+
+// RefreshToken refreshes access token
 // POST /v1/auth/refresh
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	var req struct {
-		RefreshToken string `json:"refresh_token"`
-	}
+	var req dto.RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	token, err := jwt.Parse(req.RefreshToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte(h.jwt.Secret), nil
-	})
-
-	if err != nil || !token.Valid {
-		return c.Status(fiber.StatusUnauthorized).JSON(response.Error("TOKEN_EXPIRED", "Refresh token expired or invalid"))
-	}
-
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
-
-	// Generate new access token
-	accessToken, err := h.generateAccessTokenFromID(c.Context(), userID)
+	result, err := h.authService.RefreshToken(c.Context(), req.RefreshToken)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("TOKEN_ERROR", "Failed to generate token"))
+		return h.handleError(c, err)
 	}
 
-	return c.JSON(response.Success(fiber.Map{
-		"access_token": accessToken,
-		"token_type":  "Bearer",
-	}))
+	return c.JSON(response.Success(result))
 }
 
+// Logout invalidates the session
 // POST /v1/auth/logout
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	// Get token ID from context if available
+	tokenID := ""
+	if claims := c.Locals("claims"); claims != nil {
+		if tc, ok := claims.(*service.TokenClaims); ok {
+			tokenID = tc.TokenID
+		}
+	}
+
+	// Add token to blacklist
+	_ = h.authService.Logout(c.Context(), tokenID, 0) // Token will be blacklisted until expiry
+
 	return c.JSON(response.Success(fiber.Map{
 		"message": "Logged out successfully",
 	}))
 }
 
+// GetProfile returns current user profile
 // GET /v1/me
 func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID := c.Locals("userID").(string)
 
-	userData, err := h.repo.GetUserByIDString(c.Context(), userID)
+	result, err := h.authService.GetProfile(c.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(response.Error("USER_NOT_FOUND", "User not found"))
+		return h.handleError(c, err)
 	}
 
-	return c.JSON(response.Success(userData))
+	return c.JSON(response.Success(result))
 }
 
+// UpdateProfile updates current user profile
 // PUT /v1/me
 func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID := c.Locals("userID").(string)
 
-	var req struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
-	}
+	var req dto.UpdateProfileRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Error("INVALID_REQUEST", "Invalid request body"))
 	}
 
-	err := h.repo.UpdateUser(c.Context(), userID, req.Name, req.Email)
+	result, err := h.authService.UpdateProfile(c.Context(), userID, &req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("UPDATE_FAILED", "Failed to update profile"))
+		return h.handleError(c, err)
 	}
 
-	return c.JSON(response.Success(fiber.Map{
-		"message": "Profile updated successfully",
-	}))
+	return c.JSON(response.Success(result))
 }
 
-// Helper functions
-func generateOTP() string {
-	rand.Seed(time.Now().UnixNano())
-	return fmt.Sprintf("%06d", rand.Intn(1000000))
-}
+// handleError converts service errors to HTTP responses
+func (h *AuthHandler) handleError(c *fiber.Ctx, err error) error {
+	// Check for known error types
+	switch {
+	case errors.Is(err, apperrors.ErrOTPNotFound):
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_NOT_FOUND", "No OTP found. Please request a new one"))
 
-func (h *AuthHandler) generateAccessToken(user *repository.User) (string, error) {
-	claims := config.JWTClaims{
-		UserID: user.ID,
-		Email:  user.Email,
-		Role:   user.Role,
-		Tier:   user.Tier,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    h.jwt.Issuer,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(h.jwt.AccessTokenExpiration) * time.Second)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+	case errors.Is(err, apperrors.ErrOTPInvalid):
+		return c.Status(fiber.StatusBadRequest).JSON(response.Error("OTP_INVALID", "Invalid OTP code"))
+
+	case errors.Is(err, apperrors.ErrOTPAttemptsExceeded):
+		return c.Status(fiber.StatusTooManyRequests).JSON(response.Error("OTP_LOCKED", "Too many failed attempts. Please try again later"))
+
+	case errors.Is(err, apperrors.ErrUserExists):
+		return c.Status(fiber.StatusConflict).JSON(response.Error("USER_EXISTS", "User with this email already exists"))
+
+	case errors.Is(err, apperrors.ErrInvalidCredentials):
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Error("INVALID_CREDENTIALS", "Invalid email or password"))
+
+	case errors.Is(err, apperrors.ErrUserNotFound):
+		return c.Status(fiber.StatusNotFound).JSON(response.Error("USER_NOT_FOUND", "User not found"))
+
+	case errors.Is(err, apperrors.ErrTokenInvalid), errors.Is(err, apperrors.ErrTokenExpired):
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Error("TOKEN_INVALID", "Invalid or expired token"))
+
+	case errors.Is(err, apperrors.ErrTokenBlacklisted):
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Error("TOKEN_REVOKED", "Token has been revoked"))
+
+	default:
+		// Check if it's a ServiceError
+		if se, ok := err.(*apperrors.ServiceError); ok {
+			return c.Status(fiber.StatusBadRequest).JSON(response.Error(se.Code, se.Message))
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(response.Error("INTERNAL_ERROR", "An unexpected error occurred"))
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
-	return token.SignedString(h.jwt.GetSigningKey())
-}
-
-func (h *AuthHandler) generateRefreshToken(user *repository.User) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"type":    "refresh",
-		"exp":     time.Now().Add(time.Duration(h.jwt.RefreshTokenExpiration) * time.Second).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(h.jwt.Secret))
-}
-
-func (h *AuthHandler) generateAccessTokenFromID(ctx context.Context, userID string) (string, error) {
-	user, err := h.repo.GetUserByIDString(ctx, userID)
-	if err != nil {
-		return "", err
-	}
-	return h.generateAccessToken(user)
 }

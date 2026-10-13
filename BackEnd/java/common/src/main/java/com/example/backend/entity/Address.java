@@ -2,27 +2,20 @@ package com.example.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "addresses", indexes = {
     @Index(name = "idx_addresses_user_id", columnList = "user_id")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Address {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+@SuperBuilder
+public class Address extends BaseCreatedEntity {
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -57,8 +50,4 @@ public class Address {
     @Column(name = "is_default")
     @Builder.Default
     private Boolean isDefault = false;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
 }

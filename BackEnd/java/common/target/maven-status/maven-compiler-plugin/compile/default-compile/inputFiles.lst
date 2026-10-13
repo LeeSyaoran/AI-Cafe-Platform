@@ -2,6 +2,9 @@ D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\config\JpaConfig.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\constant\AppConstants.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\Address.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\BaseCreatedEntity.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\BaseEntity.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\BaseIdEntity.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\Cafe.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\Company.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\RefreshToken.java
@@ -9,6 +12,11 @@ D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\UserCredit.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\entity\UserProfile.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\ApiException.java
-D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\GlobalExceptionHandler.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\BadRequestException.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\ConflictException.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\ForbiddenException.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\ResourceNotFoundException.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\exception\UnauthorizedException.java
+D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\handler\GlobalExceptionHandler.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\response\ApiResponse.java
 D:\project code\AI Café Platform\BackEnd\java\common\src\main\java\com\example\backend\util\IdGenerator.java

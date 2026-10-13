@@ -27,6 +27,7 @@ metadata:
 | `docs/REFACTOR_GO_API_GATEWAY.md` | Detailed refactor plan with code examples |
 | `docs/UPDATED_BACKEND_DESIGN.md` | Architecture overview, service design |
 | `docs/MIGRATION_PLAN.md` | 20-week migration to microservices |
+| `docs/POSTMAN_API_GUIDE.md` | Full catalog of API endpoints (GET, POST, PUT, DELETE, PATCH) across all 7 Java Microservices & Go Gateway for Postman testing |
 | `PLAN.md` | Implementation summary |
 
 ## Target Architecture

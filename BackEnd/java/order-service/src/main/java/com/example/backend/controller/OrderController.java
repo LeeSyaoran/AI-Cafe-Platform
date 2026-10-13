@@ -1,144 +1,80 @@
 package com.example.backend.controller;
 
-import com.example.backend.entity.Order;
-import com.example.backend.request.CreateOrderRequest;
+import com.example.backend.dto.request.CreateOrderRequest;
+import com.example.backend.dto.response.OrderResponse;
 import com.example.backend.response.ApiResponse;
 import com.example.backend.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v1/orders")
 @RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
 
-    // POST /v1/orders
-    @PostMapping("/orders")
+    @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @Valid @RequestBody CreateOrderRequest request,
             @RequestHeader("X-User-ID") UUID userId) {
-
-        Order order = orderService.createOrder(
-                userId,
-                request.getCompanyId(),
-                request.getCafeId(),
-                request.getOrderType(),
-                request.getDeliveryAddressId(),
-                request.getCustomerNote(),
-                request.getPromoCode()
-        );
-
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        OrderResponse response = orderService.createOrder(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
-    // GET /v1/orders
-    @GetMapping("/orders")
-    public ResponseEntity<ApiResponse<java.util.List<OrderResponse>>> getOrders(
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrders(
             @RequestHeader("X-User-ID") UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-
-        List<Order> orders = orderService.getUserOrders(userId, page, size);
-        return ResponseEntity.ok(ApiResponse.ok(orders.stream().map(this::toResponse).toList()));
+        List<OrderResponse> orders = orderService.getUserOrders(userId, page, size);
+        return ResponseEntity.ok(ApiResponse.ok(orders));
     }
 
-    // GET /v1/orders/:id
-    @GetMapping("/orders/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrder(@PathVariable UUID id) {
-        Order order = orderService.getOrder(id);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrder(id)));
     }
 
-    // GET /v1/orders/number/:orderNumber
-    @GetMapping("/orders/number/{orderNumber}")
+    @GetMapping("/number/{orderNumber}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderByNumber(@PathVariable String orderNumber) {
-        Order order = orderService.getOrderByNumber(orderNumber);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderByNumber(orderNumber)));
     }
 
-    // PUT /v1/orders/:id/confirm (Staff)
-    @PutMapping("/orders/{id}/confirm")
+    @PutMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<OrderResponse>> confirmOrder(@PathVariable UUID id) {
-        Order order = orderService.confirmOrder(id);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.confirmOrder(id)));
     }
 
-    // PUT /v1/orders/:id/preparing (Staff)
-    @PutMapping("/orders/{id}/preparing")
+    @PutMapping("/{id}/preparing")
     public ResponseEntity<ApiResponse<OrderResponse>> startPreparing(@PathVariable UUID id) {
-        Order order = orderService.startPreparing(id);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.startPreparing(id)));
     }
 
-    // PUT /v1/orders/:id/ready (Staff)
-    @PutMapping("/orders/{id}/ready")
+    @PutMapping("/{id}/ready")
     public ResponseEntity<ApiResponse<OrderResponse>> markReady(@PathVariable UUID id) {
-        Order order = orderService.markReady(id);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.markReady(id)));
     }
 
-    // PUT /v1/orders/:id/complete (Staff)
-    @PutMapping("/orders/{id}/complete")
+    @PutMapping("/{id}/complete")
     public ResponseEntity<ApiResponse<OrderResponse>> completeOrder(@PathVariable UUID id) {
-        Order order = orderService.completeOrder(id);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.completeOrder(id)));
     }
 
-    // POST /v1/orders/:id/cancel
-    @PostMapping("/orders/{id}/cancel")
+    @PostMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             @PathVariable UUID id,
-            @RequestBody(required = false) java.util.Map<String, String> body) {
-
+            @RequestBody(required = false) Map<String, String> body) {
         String reason = body != null ? body.get("reason") : null;
-        Order order = orderService.cancelOrder(id, reason);
-        return ResponseEntity.ok(ApiResponse.ok(toResponse(order)));
-    }
-
-    private OrderResponse toResponse(Order order) {
-        return OrderResponse.builder()
-                .id(order.getId())
-                .orderNumber(order.getOrderNumber())
-                .userId(order.getUserId())
-                .companyId(order.getCompanyId())
-                .cafeId(order.getCafeId())
-                .orderType(order.getOrderType())
-                .status(order.getStatus())
-                .subtotal(order.getSubtotal())
-                .discountAmount(order.getDiscountAmount())
-                .taxAmount(order.getTaxAmount())
-                .totalAmount(order.getTotalAmount())
-                .paymentStatus(order.getPaymentStatus())
-                .customerNote(order.getCustomerNote())
-                .createdAt(order.getCreatedAt())
-                .build();
-    }
-
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    public static class OrderResponse {
-        private UUID id;
-        private String orderNumber;
-        private UUID userId;
-        private UUID companyId;
-        private UUID cafeId;
-        private String orderType;
-        private String status;
-        private Double subtotal;
-        private Double discountAmount;
-        private Double taxAmount;
-        private Double totalAmount;
-        private String paymentStatus;
-        private String customerNote;
-        private java.time.Instant createdAt;
+        return ResponseEntity.ok(ApiResponse.ok(orderService.cancelOrder(id, reason)));
     }
 }

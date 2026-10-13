@@ -3,12 +3,19 @@ package config
 import "os"
 
 type Config struct {
-	Port         string
-	DatabaseURL  string
-	RedisURL     string
-	JWT          JWTConfig
-	CORSOrigins  string
-	RateLimit    RateLimitConfig
+	Port                   string
+	DatabaseURL            string
+	RedisURL               string
+	JWT                    JWTConfig
+	CORSOrigins            string
+	RateLimit              RateLimitConfig
+	UserServiceURL         string
+	PaymentServiceURL      string
+	MemberServiceURL       string
+	OrderServiceURL        string
+	NotificationServiceURL string
+	AdminServiceURL        string
+	CafeServiceURL         string
 }
 
 type JWTConfig struct {
@@ -43,6 +50,13 @@ func Load() *Config {
 			Capacity: 100,
 			Duration: 60,
 		},
+		UserServiceURL:         getEnv("USER_SERVICE_URL", "http://aicafe-user-service:3004"),
+		PaymentServiceURL:      getEnv("PAYMENT_SERVICE_URL", "http://aicafe-payment-service:3005"),
+		MemberServiceURL:       getEnv("MEMBER_SERVICE_URL", "http://aicafe-member-service:3006"),
+		OrderServiceURL:        getEnv("ORDER_SERVICE_URL", "http://aicafe-order-service:3007"),
+		NotificationServiceURL: getEnv("NOTIFICATION_SERVICE_URL", "http://aicafe-notification-service:3008"),
+		AdminServiceURL:        getEnv("ADMIN_SERVICE_URL", "http://aicafe-admin-service:3009"),
+		CafeServiceURL:         getEnv("CAFE_SERVICE_URL", "http://aicafe-cafe-service:3010"),
 	}
 }
 

@@ -9,6 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface LoyaltyTransactionRepository extends JpaRepository<LoyaltyTransaction, UUID> {
-
     List<LoyaltyTransaction> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }
